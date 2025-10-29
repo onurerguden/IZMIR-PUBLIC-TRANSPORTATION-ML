@@ -56,3 +56,11 @@ def plot_correlationHeatmap(df):
     plt.title("Correlation Matrix Heatmap")
     plt.gcf().canvas.manager.set_window_title("Correlation Matrix Heatmap")
     plt.show()
+
+
+def show_all_plots(df):
+    plot_boxPlots(df)
+    plot_barCharts(df)
+    plot_scatterPlots(df)
+    plot_linePlots(df)
+    plot_correlationHeatmap(df)
