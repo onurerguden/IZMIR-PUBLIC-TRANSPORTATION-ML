@@ -8,5 +8,6 @@ def main():
     plot_linePlots(df)
     plot_scatterPlots(df)
     plot_barCharts(df)
+    plot_correlationHeatmap(df)
 if __name__ == "__main__":
     main()
