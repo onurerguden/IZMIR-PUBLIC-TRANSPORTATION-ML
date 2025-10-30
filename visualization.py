@@ -1,16 +1,11 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sb
-df=pd.read_csv("izmirim-kart-ulasim-istatistikleri.csv",sep=";")
+
+df = pd.read_csv("izmirim-kart-ulasim-istatistikleri.csv", sep=";")
 
 def plot_boxPlots(df):
-    numeric_columns=df.select_dtypes(include=['int64','float64']).columns
-    '''for column in numeric_columns:
-        plt.figure(figsize=(6,4))
-        sb.boxplot(x=df[column])
-        plt.title(f'Box plot of {column}')
-        plt.xlabel(column)
-        plt.show()'''
+    numeric_columns = df.select_dtypes(include=['int64','float64']).columns
     plt.figure(figsize=(12,8))
     sb.boxplot(data=df[numeric_columns])
     plt.title('Box Plots')
@@ -19,7 +14,7 @@ def plot_boxPlots(df):
     plt.show()
 
 def plot_barCharts(df):
-    counts=df["INSTITUTION"].value_counts().head(20)
+    counts = df["INSTITUTION"].value_counts().head(20)
     plt.figure(figsize=(12,8))
     counts.plot(kind='bar')
     plt.title("Top 20 Institutions")
@@ -30,7 +25,7 @@ def plot_barCharts(df):
 
 def plot_scatterPlots(df):
     plt.figure(figsize=(12,8))
-    plt.scatter(df["FULL_FARE"],df["STUDENT"])
+    plt.scatter(df["FULL_FARE"], df["STUDENT"])
     plt.title("FULL_FARE vs STUDENT")
     plt.xlabel("FULL_FARE")
     plt.ylabel("STUDENT")
@@ -38,10 +33,10 @@ def plot_scatterPlots(df):
     plt.show()
 
 def plot_linePlots(df):
-    df["DATE"]=pd.to_datetime(df["DATE"],dayfirst=True)
-    eshot=df[df["INSTITUTION"]=="Eshot"]
+    df["DATE"] = pd.to_datetime(df["DATE"], dayfirst=True)
+    eshot = df[df["INSTITUTION"] == "Eshot"]
     plt.figure(figsize=(12,8))
-    plt.plot(eshot["DATE"],eshot["STUDENT"])
+    plt.plot(eshot["DATE"], eshot["STUDENT"])
     plt.title("Eshot - Student Usage Over Time")
     plt.xlabel("Date")
     plt.ylabel("STUDENT")
@@ -49,7 +44,7 @@ def plot_linePlots(df):
     plt.show()
 
 def plot_correlationHeatmap(df):
-    numeric_df = df.select_dtypes(include=['int64', 'float64'])
+    numeric_df = df.select_dtypes(include=['int64','float64'])
     corr = numeric_df.corr()
     plt.figure(figsize=(12,8))
     sb.heatmap(corr, annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5)
@@ -57,6 +52,51 @@ def plot_correlationHeatmap(df):
     plt.gcf().canvas.manager.set_window_title("Correlation Matrix Heatmap")
     plt.show()
 
+def plot_all_vehicle_user_trends(df):
+    """
+    İzmirim Kart verisinde bulunan tüm ulaşım araçları (INSTITUTION)
+    için kullanıcı türlerine göre aylık kullanım çizgi grafikleri üretir.
+    """
+    df["DATE"] = pd.to_datetime(df["DATE"], dayfirst=True)
+    df["MONTH"] = df["DATE"].dt.to_period("M")
+
+    user_types = ["FULL_FARE", "STUDENT", "TEACHER", "SIXTY_YEARS_OLD",
+                  "TICKET", "CHILD", "PERSONNEL", "FREE", "BANK CARD"]
+
+    colors = {
+        "FULL_FARE": "#1f77b4",
+        "STUDENT": "#ff7f0e",
+        "TEACHER": "#2ca02c",
+        "SIXTY_YEARS_OLD": "#d62728",
+        "TICKET": "#9467bd",
+        "CHILD": "#8c564b",
+        "PERSONNEL": "#e377c2",
+        "FREE": "#7f7f7f",
+        "BANK CARD": "#00FFFF"  # açık camgöbeği
+    }
+
+    for inst in df["INSTITUTION"].unique():
+        vdf = df[df["INSTITUTION"] == inst]
+        monthly = vdf.groupby("MONTH")[user_types].sum()
+
+        if monthly.empty:
+            continue
+
+        x_labels = [f"{d.month:02d}.{str(d.year)[2:]}" for d in monthly.index]
+
+        plt.figure(figsize=(12,6))
+        for col in user_types:
+            plt.plot(x_labels, monthly[col], marker='o', label=col, color=colors.get(col, None))
+
+        plt.title(f"{inst} - Kullanıcı Türlerine Göre Aylık Kullanım")
+        plt.xlabel("Ay")
+        plt.ylabel("Kullanım Sayısı")
+        plt.xticks(rotation=45)
+        plt.legend(bbox_to_anchor=(1.05,1), loc='upper left')
+        plt.grid(True, linestyle="--", alpha=0.6)
+        plt.tight_layout()
+        plt.gcf().canvas.manager.set_window_title(f"{inst} - Kullanıcı Türlerine Göre Aylık Kullanım")
+        plt.show()
 
 def show_all_plots(df):
     plot_boxPlots(df)
@@ -64,3 +104,4 @@ def show_all_plots(df):
     plot_scatterPlots(df)
     plot_linePlots(df)
     plot_correlationHeatmap(df)
+    plot_all_vehicle_user_trends(df)
