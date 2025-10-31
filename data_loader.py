@@ -9,3 +9,4 @@ def show_statistics(df):
     print("number of missing values: ",df.isnull().sum().sum())
     print("mode of the categorical attribute INSTITUTION: ",df["INSTITUTION"].mode()[0])
 
+

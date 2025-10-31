@@ -105,3 +105,4 @@ def show_all_plots(df):
     plot_linePlots(df)
     plot_correlationHeatmap(df)
     plot_all_vehicle_user_trends(df)
+
