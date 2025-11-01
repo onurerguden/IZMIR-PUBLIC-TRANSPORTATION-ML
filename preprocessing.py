@@ -11,6 +11,9 @@ new_df=df.drop(columns=dropped_columns)
 new_df.to_csv("izmirim-kart-temiz.csv",sep=";",index=False)'''
 
 new_df=df
+
+
+### GOZDEN GECIRILECEK -OE
 def discretization_equal_frequency():
     X=new_df[["STUDENT","FULL_FARE"]]
     kbd=KBinsDiscretizer(n_bins=4,encode="ordinal",strategy="quantile")
@@ -19,6 +22,8 @@ def discretization_equal_frequency():
     new_df["STUDENT_BINNED"]=X_binned[:,0]
     print(new_df[["FULL_FARE", "FULL_FARE_BINNED", "STUDENT", "STUDENT_BINNED"]].head(10))
 
+
+### GOZDEN GECIRILECEK -OE
 def discretization_equal_interval():
     X=new_df[["STUDENT","FULL_FARE"]]
     kbd=KBinsDiscretizer(n_bins=4,encode="ordinal",strategy="uniform",subsample=200_000)
@@ -27,6 +32,10 @@ def discretization_equal_interval():
     new_df["STUDENT_BINNED"]=X_binned[:,0]
     print("\n",new_df[["FULL_FARE", "FULL_FARE_BINNED", "STUDENT", "STUDENT_BINNED"]].head(1000))
 
+
+
+
+### GOZDEN GECIRILECEK -OE
 def normalize_and_standardize():
     scaler_norm=MinMaxScaler()
     scaler_std=StandardScaler()
