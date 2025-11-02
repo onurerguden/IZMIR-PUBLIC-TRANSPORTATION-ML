@@ -6,10 +6,17 @@ def main():
     df=load_data("izmirim-kart-ulasim-istatistikleri.csv")
     show_statistics(df)
     show_all_plots(df)
-   #apply_outlier_detection("TICKET")
-    print(df.columns)
-    for column in df.columns:
-        if column!="DATE" and column!="INSTITUTION":
-            apply_outlier_detection(column)
+
+    if "MONTH" not in df.columns:
+        df["MONTH"] = pd.to_datetime(df["DATE"]).dt.month
+
+    numeric_cols = df.select_dtypes(include=["int64", "float64"]).columns.tolist()
+    print("Numeric columns to process:", numeric_cols)
+
+    for column in numeric_cols:
+        df = apply_outlier_detection(df, column)
+
+
+
 if __name__ == "__main__":
     main()
