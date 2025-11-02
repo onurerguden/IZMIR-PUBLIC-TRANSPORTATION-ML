@@ -54,8 +54,8 @@ def plot_correlationHeatmap(df):
 
 def plot_all_vehicle_user_trends(df):
     """
-    İzmirim Kart verisinde bulunan tüm ulaşım araçları (INSTITUTION)
-    için kullanıcı türlerine göre aylık kullanım çizgi grafikleri üretir.
+    Generates monthly usage line charts by user types for all transportation vehicles (INSTITUTION)
+    in the Izmirim Kart data.
     """
     df["DATE"] = pd.to_datetime(df["DATE"], dayfirst=True)
     df["MONTH"] = df["DATE"].dt.to_period("M")
@@ -72,7 +72,7 @@ def plot_all_vehicle_user_trends(df):
         "CHILD": "#8c564b",
         "PERSONNEL": "#e377c2",
         "FREE": "#7f7f7f",
-        "BANK CARD": "#00FFFF"  # açık camgöbeği
+        "BANK CARD": "#00FFFF"  # light cyan
     }
 
     for inst in df["INSTITUTION"].unique():
@@ -88,14 +88,14 @@ def plot_all_vehicle_user_trends(df):
         for col in user_types:
             plt.plot(x_labels, monthly[col], marker='o', label=col, color=colors.get(col, None))
 
-        plt.title(f"{inst} - Kullanıcı Türlerine Göre Aylık Kullanım")
-        plt.xlabel("Ay")
-        plt.ylabel("Kullanım Sayısı")
+        plt.title(f"{inst} - Monthly Usage by User Types")
+        plt.xlabel("Month")
+        plt.ylabel("Usage Count")
         plt.xticks(rotation=45)
         plt.legend(bbox_to_anchor=(1.05,1), loc='upper left')
         plt.grid(True, linestyle="--", alpha=0.6)
         plt.tight_layout()
-        plt.gcf().canvas.manager.set_window_title(f"{inst} - Kullanıcı Türlerine Göre Aylık Kullanım")
+        plt.gcf().canvas.manager.set_window_title(f"{inst} - Monthly Usage by User Types")
         plt.show()
 
 def show_all_plots(df):
@@ -105,4 +105,3 @@ def show_all_plots(df):
     plot_linePlots(df)
     plot_correlationHeatmap(df)
     plot_all_vehicle_user_trends(df)
-
