@@ -16,7 +16,5 @@ def main():
     for column in numeric_cols:
         df = apply_outlier_detection(df, column)
 
-
-
 if __name__ == "__main__":
     main()
