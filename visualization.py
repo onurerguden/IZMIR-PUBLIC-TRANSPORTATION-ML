@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sb
-from data_loader import load_data
+from mpl_toolkits.mplot3d import Axes3D
 
 
 def plot_boxPlots(df):
@@ -97,6 +97,33 @@ def plot_all_vehicle_user_trends(df):
         plt.tight_layout()
         plt.gcf().canvas.manager.set_window_title(f"{inst} - Monthly Usage by User Types")
         plt.show()
+
+
+
+def plot_PCA_in_2D(pca_df):
+    plt.figure(figsize=(8,6))
+    plt.scatter(pca_df["PC1"],pca_df["PC2"],alpha=0.5)
+    plt.title("PCA - 2D VISUALIZATION")
+    plt.xlabel("PC1")
+    plt.ylabel("PC2")
+    plt.show()
+
+
+
+def plot_PCA_in_3D(pca_df,color="blue"):
+    figure=plt.figure(figsize=(9,7))
+    ax=figure.add_subplot(111,projection="3d")
+    ax.scatter(
+        pca_df["PC1"],pca_df["PC2"],pca_df["PC3"],c=color,
+        s=40,alpha=0.6,edgecolors="k"
+    )
+    ax.set_title("PCA - 3D VISUALIZATION")
+    ax.set_xlabel("PC1")
+    ax.set_ylabel("PC2")
+    ax.set_zlabel("PC3")
+    plt.show()
+
+
 
 def show_all_plots(df):
     plot_boxPlots(df)

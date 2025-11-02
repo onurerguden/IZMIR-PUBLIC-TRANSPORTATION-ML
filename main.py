@@ -16,5 +16,8 @@ def main():
     for column in numeric_cols:
         df = apply_outlier_detection(df, column)
 
+    pca_df,variance=apply_PCA(df,3)
+    plot_PCA_in_3D(pca_df,"teal")
+
 if __name__ == "__main__":
     main()

@@ -1,9 +1,7 @@
 import pandas as pd
 from sklearn.preprocessing import KBinsDiscretizer
 from sklearn.preprocessing import StandardScaler,MinMaxScaler
-from data_loader import load_data
-
-
+from sklearn.decomposition import PCA
 def discretization_equal_frequency(df):
     cols = ["STUDENT", "FULL_FARE"]
     kbd = KBinsDiscretizer(n_bins=4, encode="ordinal", strategy="quantile")
@@ -54,3 +52,17 @@ def apply_outlier_detection(df, column):
     print(f"{column}: {len(outliers)} outliers detected")
 
     return df
+
+def apply_PCA(df,n_components=2):
+    df=pd.read_csv("izmirim-kart-ulasim-istatistikleri-guncel.csv")
+    numeric_df=df.select_dtypes(include=["int64","float64"])
+    scaler=StandardScaler()
+    scaled_data=scaler.fit_transform(numeric_df)
+    pca=PCA(n_components=n_components)
+    pca_result=pca.fit_transform(scaled_data)
+    pca_df=pd.DataFrame(pca_result,columns=[f"PC{i+1}"for i in range(n_components)])
+    explained_variance = pca.explained_variance_ratio_
+
+    print("Explained variance ratio: ", explained_variance)
+    print("Total variance explained: ", sum(explained_variance))
+    return pca_df, explained_variance
