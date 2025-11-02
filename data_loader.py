@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 def load_data():
     df=pd.read_csv("izmirim-kart-ulasim-istatistikleri-guncel.csv",sep=",")
     df.drop("_id",axis=1,inplace=True)
