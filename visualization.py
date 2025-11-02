@@ -1,8 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sb
+from data_loader import load_data
 
-df = pd.read_csv("izmirim-kart-ulasim-istatistikleri.csv", sep=";")
 
 def plot_boxPlots(df):
     numeric_columns = df.select_dtypes(include=['int64','float64']).columns

@@ -1,7 +1,8 @@
 import pandas as pd
 
-def load_data(filepath):
-    df=pd.read_csv(filepath,sep=";")
+def load_data():
+    df=pd.read_csv("izmirim-kart-ulasim-istatistikleri-guncel.csv",sep=",")
+    df.drop("_id",axis=1,inplace=True)
     print("data loaded...")
     return df
 def show_statistics(df):

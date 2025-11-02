@@ -3,7 +3,7 @@ from visualization import *
 from preprocessing import *
 
 def main():
-    df=load_data("izmirim-kart-ulasim-istatistikleri.csv")
+    df=load_data()
     show_statistics(df)
     show_all_plots(df)
 
