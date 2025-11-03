@@ -1,8 +1,31 @@
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sb
 from mpl_toolkits.mplot3d import Axes3D
 
+import unicodedata
+
+def save_plot(fig, filename):
+    os.makedirs("plots", exist_ok=True)
+
+    # Normalize and clean file names
+    normalized = (
+        filename.replace("İ", "I").replace("ı", "i")
+        .replace("Ş", "S").replace("ş", "s")
+        .replace("Ğ", "G").replace("ğ", "g")
+        .replace("Ü", "U").replace("ü", "u")
+        .replace("Ö", "O").replace("ö", "o")
+        .replace("Ç", "C").replace("ç", "c")
+    )
+    normalized = unicodedata.normalize("NFKD", normalized).encode("ascii", "ignore").decode("ascii")
+    path = os.path.join("plots", normalized)
+
+    if not os.path.exists(path):
+        fig.savefig(path, format="pdf", bbox_inches="tight")
+        print(f"Saved: {path}")
+    else:
+        print(f"Plot already exists: {path}")
 
 def plot_boxPlots(df):
     numeric_columns = df.select_dtypes(include=['int64','float64']).columns
@@ -11,6 +34,7 @@ def plot_boxPlots(df):
     plt.title('Box Plots')
     plt.xticks(rotation=45)
     plt.gcf().canvas.manager.set_window_title("Box Plots")
+    save_plot(plt.gcf(), "box_plots.pdf")
     plt.show()
 
 def plot_barCharts(df):
@@ -21,6 +45,7 @@ def plot_barCharts(df):
     plt.ylabel("FREQUENCY")
     plt.xlabel("INSTITUTION")
     plt.gcf().canvas.manager.set_window_title("Bar Chart - Top 20 Institutions")
+    save_plot(plt.gcf(), "bar_chart_top20.pdf")
     plt.show()
 
 def plot_scatterPlots(df):
@@ -30,6 +55,7 @@ def plot_scatterPlots(df):
     plt.xlabel("FULL_FARE")
     plt.ylabel("STUDENT")
     plt.gcf().canvas.manager.set_window_title("Scatter Plot - FULL_FARE vs STUDENT")
+    save_plot(plt.gcf(), "scatter_fullfare_vs_student.pdf")
     plt.show()
 
 def plot_linePlots(df):
@@ -41,6 +67,7 @@ def plot_linePlots(df):
     plt.xlabel("Date")
     plt.ylabel("STUDENT")
     plt.gcf().canvas.manager.set_window_title("Line Plot - Eshot Student Usage Over Time")
+    save_plot(plt.gcf(), "line_plot_eshot_student_usage.pdf")
     plt.show()
 
 def plot_correlationHeatmap(df):
@@ -50,6 +77,7 @@ def plot_correlationHeatmap(df):
     sb.heatmap(corr, annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5)
     plt.title("Correlation Matrix Heatmap")
     plt.gcf().canvas.manager.set_window_title("Correlation Matrix Heatmap")
+    save_plot(plt.gcf(), "correlation_heatmap.pdf")
     plt.show()
 
 def plot_all_vehicle_user_trends(df):
@@ -96,9 +124,9 @@ def plot_all_vehicle_user_trends(df):
         plt.grid(True, linestyle="--", alpha=0.6)
         plt.tight_layout()
         plt.gcf().canvas.manager.set_window_title(f"{inst} - Monthly Usage by User Types")
+        filename = f"{inst.lower().replace(' ', '_')}_monthly_usage_by_user_types.pdf"
+        save_plot(plt.gcf(), filename)
         plt.show()
-
-
 
 def plot_PCA_in_2D(pca_df):
     plt.figure(figsize=(8,6))
@@ -106,9 +134,8 @@ def plot_PCA_in_2D(pca_df):
     plt.title("PCA - 2D VISUALIZATION")
     plt.xlabel("PC1")
     plt.ylabel("PC2")
+    save_plot(plt.gcf(), "pca_2d_visualization.pdf")
     plt.show()
-
-
 
 def plot_PCA_in_3D(pca_df,color="blue"):
     figure=plt.figure(figsize=(9,7))
@@ -121,9 +148,8 @@ def plot_PCA_in_3D(pca_df,color="blue"):
     ax.set_xlabel("PC1")
     ax.set_ylabel("PC2")
     ax.set_zlabel("PC3")
+    save_plot(plt.gcf(), "pca_3d_visualization.pdf")
     plt.show()
-
-
 
 def show_all_plots(df):
     plot_boxPlots(df)
