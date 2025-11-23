@@ -42,11 +42,11 @@ def add_custom_education_events(df):
     return df
 
 
-# --- 1️⃣ CSV'yi oku ---
+
 df = pd.read_csv("data/current-data/izmirim-kart-ulasim-istatistikleri-guncel.csv", sep=",")
 df["DATE"] = pd.to_datetime(df["DATE"], dayfirst=True)
 
-# --- 2️⃣ Yeni öznitelikleri oluştur ---
+
 df["MONTH"] = df["DATE"].dt.month
 df["SEASON"] = df["MONTH"].apply(get_season)
 df["WEEKDAY"] = df["DATE"].dt.weekday
@@ -54,9 +54,9 @@ df["DAY_TYPE"] = df["WEEKDAY"].apply(lambda x: "Weekend" if x >= 5 else "Weekday
 df["IS_HOLIDAY"] = df["DATE"].apply(lambda x: 1 if x in turkish_holidays else 0)
 df["HOLIDAY_TYPE"] = df["DATE"].apply(lambda x: turkish_holidays.get(x, "None"))
 
-# --- 3️⃣ Özel eğitim/sınav dönemlerini ekle ---
+
 df = add_custom_education_events(df)
 
-# --- 4️⃣ Yeni CSV olarak kaydet ---
+
 df.to_csv("izmirim-kart-ulasim-istatistikleri-guncel-extended.csv", sep=";", index=False)
-print("✅ Yeni dosya kaydedildi: izmirim-kart-ulasim-istatistikleri-guncel-extended.csv")
+print(" Yeni dosya kaydedildi: izmirim-kart-ulasim-istatistikleri-guncel-extended.csv")
