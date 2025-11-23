@@ -43,7 +43,7 @@ def add_custom_education_events(df):
 
 
 # --- 1️⃣ CSV'yi oku ---
-df = pd.read_csv("izmirim-kart-ulasim-istatistikleri-guncel.csv", sep=",")
+df = pd.read_csv("data/current-data/izmirim-kart-ulasim-istatistikleri-guncel.csv", sep=",")
 df["DATE"] = pd.to_datetime(df["DATE"], dayfirst=True)
 
 # --- 2️⃣ Yeni öznitelikleri oluştur ---

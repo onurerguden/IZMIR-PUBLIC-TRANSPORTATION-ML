@@ -2,7 +2,7 @@ import pandas as pd
 
 
 def load_data():
-    df = pd.read_csv("izmirim-kart-ulasim-istatistikleri-guncel.csv", sep=",")
+    df = pd.read_csv("data/current-data/izmirim-kart-ulasim-istatistikleri-guncel.csv", sep=",")
     if "_id" in df.columns:
         df.drop("_id", axis=1, inplace=True)
     print("Data loaded...")

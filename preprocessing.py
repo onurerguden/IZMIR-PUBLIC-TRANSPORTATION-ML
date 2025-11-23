@@ -54,7 +54,7 @@ def apply_outlier_detection(df, column):
     return df
 
 def apply_PCA(df,n_components=2):
-    df=pd.read_csv("izmirim-kart-ulasim-istatistikleri-guncel.csv")
+    df=pd.read_csv("data/current-data/izmirim-kart-ulasim-istatistikleri-guncel.csv")
     numeric_df=df.select_dtypes(include=["int64","float64"])
     scaler=StandardScaler()
     scaled_data=scaler.fit_transform(numeric_df)

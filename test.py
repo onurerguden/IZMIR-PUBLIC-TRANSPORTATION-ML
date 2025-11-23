@@ -1,7 +1,7 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-df=pd.read_csv("izmirim-kart-ulasim-istatistikleri.csv",sep=";")
+df=pd.read_csv("data/old-data/izmirim-kart-ulasim-istatistikleri.csv", sep=";")
 #print(df.head())
 print(df.columns)
 print(df.shape)
@@ -13,7 +13,7 @@ print(df.columns)
 print(df.info())
 print(df.describe())'''
 def printColumns():
-    with open("izmirim-kart-ulasim-istatistikleri.csv") as f:
+    with open("data/old-data/izmirim-kart-ulasim-istatistikleri.csv") as f:
         print(f.readline())
 #printColumns()
 def drawCorrMatrix():
