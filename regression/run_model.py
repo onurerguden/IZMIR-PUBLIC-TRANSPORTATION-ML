@@ -1,45 +1,54 @@
 import pandas as pd
-# Algoritmanızı regressiontwo dosyasından çekiyoruz
-from regressiontwo import train_monthly_xgboost_student
+from regressiontwo import train_general_xgboost_model
+
 
 def run_test_scenario():
+    # ==========================================
+    # KONTROL PANELI
+    # ==========================================
+
+    SECILEN_KURUM = "ÝZTAÞIT KÝRAZ"  # Orn: Eshot, Metro, Izban
+    SECILEN_KART = "STUDENT"  # Orn: STUDENT, FULL_FARE
+
+    # --- TARIH AYARI ---
+    # Filtrelemek isterseniz tarih girin: "2023-07-01"
+    # Filtreyi KAPATMAK (Tum veri) icin: None
+    BASLANGIC_TARIHI = None
+
+    # ==========================================
+
     print("--------------------------------------------------")
-    print("🚀 ESHOT ÖĞRENCİ TAHMİN ALGORİTMASI BAŞLATILIYOR")
+    print(f"TAHMIN ALGORITMASI: {SECILEN_KURUM.upper()} - {SECILEN_KART}")
+    print(f"Tarih Modu: {BASLANGIC_TARIHI if BASLANGIC_TARIHI else 'TUM TARIHCE'}")
     print("--------------------------------------------------")
 
-    # 1. Veriyi Yükle
-    # 'group_dataset_by_TimeLines.py' çıktısı olan dosyayı kullanıyoruz
     file_path = "izmirim-kart-ulasim-istatistikleri-guncel-extended.csv"
 
     try:
-        # Dosyanız noktalı virgül (;) ile ayrılmıştı, bunu belirtiyoruz
         df = pd.read_csv(file_path, sep=";")
-        print(f"✅ Veri Seti Yüklendi: {file_path}")
-        print(f"📊 Toplam Satır Sayısı: {len(df)}")
-
+        print(f"Veri Seti Yuklendi. Toplam Satir: {len(df)}")
     except FileNotFoundError:
-        print(f"❌ HATA: '{file_path}' dosyası bulunamadı!")
-        print("Lütfen önce veri setini oluşturduğunuzdan emin olun.")
+        print(f"HATA: '{file_path}' bulunamadi!")
         return
 
-    # 2. Algoritmayı Çalıştır
-    # Bu fonksiyon kendi içinde temizlik, %80-%20 ayrımı ve test işlemini yapar
     try:
-        print("\n⏳ Model eğitiliyor ve test ediliyor, lütfen bekleyin...\n")
+        # Tarih parametresini gonderiyoruz
+        model, results_table = train_general_xgboost_model(
+            df,
+            target_col=SECILEN_KART,
+            institution_name=SECILEN_KURUM,
+            start_date=BASLANGIC_TARIHI  # <--- YENI PARAMETRE
+        )
 
-        models, results_table = train_monthly_xgboost_student(df, target_col="STUDENT")
-
-        # 3. Sonuçları Yazdır
-        print("--------------------------------------------------")
-        print("🏆 MODEL PERFORMANS SONUÇLARI (TEST VERİSİ)")
-        print("--------------------------------------------------")
-        # Tabloyu düzgün formatta yazdıralım
+        print("\n" + "=" * 80)
+        print(f"SONUC RAPORU ({SECILEN_KURUM} - {SECILEN_KART})")
+        print("=" * 80)
         print(results_table.to_string(index=False))
-        print("--------------------------------------------------")
-        print("✅ İşlem Başarıyla Tamamlandı.")
+        print("=" * 80)
 
     except Exception as e:
-        print(f"\n❌ Algoritma çalışırken bir hata oluştu:\n{e}")
+        print(f"\nHata olustu:\n{e}")
+
 
 if __name__ == "__main__":
     run_test_scenario()

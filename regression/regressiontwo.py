@@ -5,13 +5,15 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 
-def clean_and_filter_data(df):
+def clean_and_filter_data(df, institution_name="Eshot", start_date=None):
     """
-    Veriyi temizler, ESHOT için filtreler ve eğitim için hazırlar.
+    Veriyi temizler ve ISTENEN KURUM icin filtreler.
+    start_date: Eger tarih verilirse (orn: '2023-07-01') o tarihten sonrasini alir.
+                Eger None verilirse tarih filtresi uygulamaz (Tum veri).
     """
-    print("--- Veri Ön İşleme ve Filtreleme Başlıyor (Sadece ESHOT) ---")
+    print(f"--- Veri On Isleme Basliyor (Kurum: {institution_name.upper()}) ---")
 
-    # 1. Tarih Dönüşümü
+    # 1. Tarih Donusumu
     df["DATE"] = pd.to_datetime(df["DATE"], format='mixed', dayfirst=True)
 
     # 2. Temizlik
@@ -22,103 +24,105 @@ def clean_and_filter_data(df):
     string_cols = ["DAY_TYPE", "HOLIDAY_TYPE", "INSTITUTION"]
     for col in string_cols:
         if col in df.columns:
-            df[col] = df[col].astype(str).str.strip()
+            df[col] = df[col].astype(str).str.strip().str.capitalize()
 
-    # 3. Tarih Filtresi (2023 Eylül ve sonrası)
-    start_date = pd.to_datetime("2023-09-01")
-    df = df[df["DATE"] >= start_date].copy()
+    # 3. TARIH FILTRESI (Parametrik)
+    if start_date is not None:
+        filter_date = pd.to_datetime(start_date)
+        df = df[df["DATE"] >= filter_date].copy()
+        print(f"-> Tarih Filtresi Uygulandi: {start_date} ve sonrasi.")
+    else:
+        print("-> Tarih Filtresi KAPALI (Tum gecmis veri kullaniliyor).")
 
-    # 4. Filtreleme
-    df = df[
-        (df["DAY_TYPE"].str.capitalize() == "Weekday") &
-        (df["HOLIDAY_TYPE"].str.capitalize() == "None") &
-        (df["INSTITUTION"] == "Eshot")
-        ].copy()
+    # 4. Kurum Filtresi
+    if "INSTITUTION" in df.columns:
+        df = df[df["INSTITUTION"].str.lower() == institution_name.lower()].copy()
 
     return df
 
 
-def train_monthly_xgboost_student(df, target_col="STUDENT"):
+def train_general_xgboost_model(df, target_col="STUDENT", institution_name="Eshot", start_date=None):
     """
-    Sadece Eshot verisi üzerinde aylık XGBoost modelleri eğitir.
-    Ekstra olarak YÜZDESEL DOĞRULUK (ACCURACY) hesaplar.
+    start_date parametresini temizlik fonksiyonuna iletir.
+    Leakage (Sizinti) onlemi alinmistir.
     """
-    # 1. Filtreleme
-    df_clean = clean_and_filter_data(df)
+    # 1. Temizlik ve Filtreleme
+    df_clean = clean_and_filter_data(df, institution_name, start_date)
 
     if df_clean.empty:
-        raise ValueError("HATA: Filtreleme sonucunda ESHOT verisi kalmadı!")
+        print(f"HATA: '{institution_name}' icin veri yok veya tarih araliginda veri bulunamadi!")
+        raise ValueError("Veri seti bos.")
 
-    # 2. Sütun Seçimi
-    leakage_cols = ["FULL_FARE", "TEACHER", "SIXTY_YEARS_OLD", "TICKET",
-                    "CHILD", "PERSONNEL", "FREE", "BANK CARD", target_col]
+    # ZAMAN SIRALAMASI
+    df_clean = df_clean.sort_values("DATE").reset_index(drop=True)
 
-    drop_cols = ["DATE", "DAY_TYPE", "HOLIDAY_TYPE", "IS_HOLIDAY", "SPECIAL_EVENT", "INSTITUTION"] + leakage_cols
+    print(f"{institution_name.upper()} - {target_col} icin {len(df_clean)} gun veri hazirlandi.")
 
-    cat_cols = ["SEASON"]
+    # 2. Ozellik Muhendisligi
+    df_clean["MONTH_NUM"] = df_clean["DATE"].dt.month
+    df_clean["DAY_OF_WEEK"] = df_clean["DATE"].dt.weekday
+    df_clean["YEAR"] = df_clean["DATE"].dt.year
+
+    # 3. Sutun Secimi (Leakage Onleme - KRITIK)
+    all_card_types = ["FULL_FARE", "STUDENT", "TEACHER", "SIXTY_YEARS_OLD",
+                      "TICKET", "CHILD", "PERSONNEL", "FREE", "BANK CARD"]
+
+    # Target dahil TUM bilet sayilarini X'ten atiyoruz
+    base_drop_cols = ["DATE", "INSTITUTION", "IS_HOLIDAY", "SPECIAL_EVENT"] + all_card_types
+
+    # 4. Kategorik Kodlama
+    cat_cols = ["DAY_TYPE", "HOLIDAY_TYPE", "SEASON"]
     valid_cat_cols = [c for c in cat_cols if c in df_clean.columns]
 
     df_encoded = pd.get_dummies(df_clean, columns=valid_cat_cols, drop_first=True)
 
-    # 3. Aylık Döngü
-    models = {}
-    results = []
+    # 5. X ve y Ayrimi
+    X = df_encoded.drop(columns=[c for c in base_drop_cols if c in df_encoded.columns], errors='ignore')
+    y = df_clean[target_col]
 
-    df_clean["MONTH_NUM"] = df_clean["DATE"].dt.month
-    available_months = df_clean["MONTH_NUM"].unique()
-    available_months.sort()
+    # 6. Train / Test Ayrimi (Shuffle=False)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, shuffle=False)
 
-    print(f"\n--- {len(available_months)} Farklı Ay İçin ESHOT Model Eğitimi (Doğruluk Analizli) Başlıyor ---")
+    print(f"Egitim Seti: {len(X_train)} gun | Test Seti: {len(X_test)} gun")
 
-    for month in available_months:
-        month_mask = df_clean["MONTH_NUM"] == month
-        month_data = df_encoded[month_mask]
+    # 7. Model Egitimi
+    print("Model egitiliyor...")
+    model = XGBRegressor(
+        n_estimators=1000,
+        learning_rate=0.03,
+        max_depth=6,
+        early_stopping_rounds=30,
+        n_jobs=-1,
+        random_state=42
+    )
 
-        X = month_data.drop(columns=[c for c in drop_cols if c in month_data.columns] + ["MONTH_NUM"], errors='ignore')
-        y = df_clean.loc[month_mask, target_col]
+    model.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
 
-        if len(X) < 5:
-            continue
+    # 8. Sonuc Hesaplama
+    preds = model.predict(X_test)
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    rmse = np.sqrt(mean_squared_error(y_test, preds))
+    mae = mean_absolute_error(y_test, preds)
+    real_mean = y_test.mean()
 
-        model = XGBRegressor(
-            n_estimators=500, learning_rate=0.05, max_depth=6,
-            early_stopping_rounds=10, n_jobs=-1, random_state=42
-        )
+    accuracy_percentage = 0
+    if real_mean > 0:
+        accuracy_percentage = max(0, (1 - (mae / real_mean)) * 100)
 
-        model.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+    # Tarih araligi bilgisini rapora ekleyelim
+    donem_bilgisi = f"{start_date} Sonrasi" if start_date else "Tum Tarihce"
 
-        preds = model.predict(X_test)
+    results = [{
+        "Donem": donem_bilgisi,
+        "Kurum": institution_name.upper(),
+        "Kart Tipi": target_col,
+        "RMSE": round(rmse, 2),
+        "MAE (Hata)": round(mae, 2),
+        "Ortalama Binis": round(real_mean, 2),
+        "Dogruluk (%)": round(accuracy_percentage, 2),
+        "Veri Sayisi": len(X_test)
+    }]
 
-        # --- METRİK HESAPLAMA ---
-        rmse = np.sqrt(mean_squared_error(y_test, preds))
-        mae = mean_absolute_error(y_test, preds)
+    print(f"Islem Tamam! {institution_name} - {target_col} Dogruluk: %{accuracy_percentage:.2f}")
 
-        # --- [YENİ] GÜVENİLİRLİK / DOĞRULUK ALGORİTMASI ---
-        # Test setindeki gerçek verilerin ortalamasını alıyoruz
-        real_mean = y_test.mean()
-
-        # Doğruluk Formülü: 1 - (Hata / Gerçek Ortalama)
-        if real_mean > 0:
-            error_ratio = mae / real_mean
-            accuracy_percentage = (1 - error_ratio) * 100
-        else:
-            accuracy_percentage = 0
-
-        # Eksiye düşerse (Hata > Gerçek) 0'a sabitle (Çok nadir olur)
-        accuracy_percentage = max(0, accuracy_percentage)
-
-        models[month] = model
-        results.append({
-            "Ay": int(month),
-            "RMSE": round(rmse, 2),
-            "MAE (Hata)": round(mae, 2),
-            "Ortalama Biniş": round(real_mean, 2),
-            "Doğruluk (%)": round(accuracy_percentage, 2),
-            "Veri Sayısı": len(X)
-        })
-
-        print(f"Ay {month}: Eshot Modeli -> Doğruluk: %{accuracy_percentage:.2f} (Hata: {mae:.0f})")
-
-    return models, pd.DataFrame(results)
+    return model, pd.DataFrame(results)
