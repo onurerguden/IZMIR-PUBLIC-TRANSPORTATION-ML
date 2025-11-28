@@ -3,17 +3,17 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
-        <entry key="\data\current-data\izmirim-kart-ulasim-istatistikleri-guncel.csv">
+        <entry key="/classification/izmirim-kart-ulasim-istatistikleri-guncel.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
             </Attribute>
           </value>
         </entry>
-        <entry key="\izmirim-kart-ulasim-istatistikleri-guncel-extended.csv">
+        <entry key="\data\current-data\izmirim-kart-ulasim-istatistikleri-guncel.csv">
           <value>
             <Attribute>
-              <option name="separator" value=";" />
+              <option name="separator" value="," />
             </Attribute>
           </value>
         </entry>
