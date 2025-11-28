@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+import holidays  # <-- YENİ EKLENEN KÜTÜPHANE (pip install holidays)
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.linear_model import Ridge
 from sklearn.ensemble import RandomForestRegressor
@@ -38,15 +39,14 @@ df = pd.read_csv(DATA_PATH, sep=sep)
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-
+# Tarih Formatı Düzeltme
 df['DATE'] = pd.to_datetime(df['DATE'], dayfirst=True, errors='coerce')
 
-# Eğer tarih dönüşümünde hata oluştuysa o satırları temizleyelim
 if df['DATE'].isna().sum() > 0:
     print(f"UYARI: {df['DATE'].isna().sum()} satırda tarih hatası var ve silindi.")
     df = df.dropna(subset=['DATE'])
 
-# Tarihe göre sıralama (Time Series için şart)
+# Sıralama
 df = df.sort_values(by=['DATE', 'INSTITUTION'])
 
 # Date Features
@@ -56,23 +56,32 @@ df['IS_WEEKEND'] = df['WEEKDAY'].apply(lambda x: 1 if x >= 5 else 0)
 df['SEASON'] = df['MONTH'].apply(lambda x: 'Winter' if x in [12, 1, 2] else (
     'Spring' if x in [3, 4, 5] else ('Summer' if x in [6, 7, 8] else 'Autumn')))
 
+# --- YENİ EKLENEN BÖLÜM: TÜRKİYE RESMİ TATİLLERİ ---
+print("Adding Turkish Public Holidays...")
+# Türkiye tatillerini yükle
+tr_holidays = holidays.Turkey()
+
+# Her tarih için tatil kontrolü yap (1: Tatil, 0: Normal Gün)
+df['IS_HOLIDAY'] = df['DATE'].apply(lambda x: 1 if x in tr_holidays else 0)
+
+# İsteğe bağlı: Tatilin adını da merak edersen (Ramazan Bayramı vb.) görebilirsin
+# df['HOLIDAY_NAME'] = df['DATE'].apply(lambda x: tr_holidays.get(x) if x in tr_holidays else "None")
+
+print(f">> Toplam {df['IS_HOLIDAY'].sum()} adet tatil günü işaretlendi.")
+
 # Target Variable Creation
-passenger_cols = ['FULL_FARE', 'STUDENT', 'TEACHER', 'SIXTY_YEARS_OLD', 'TICKET', 'CHILD', 'PERSONNEL', 'FREE',
-                  'BANK CARD']
+passenger_cols = ['FULL_FARE', 'STUDENT', 'TEACHER', 'SIXTY_YEARS_OLD', 'TICKET', 'CHILD', 'PERSONNEL', 'FREE', 'BANK CARD']
 available_passenger_cols = [c for c in passenger_cols if c in df.columns]
 df['TOTAL_PASSENGERS'] = df[available_passenger_cols].sum(axis=1)
 
-# --- BEST PRACTICE: FEATURE ENGINEERING ---
+# --- FEATURE ENGINEERING ---
 print("Engineering lag features...")
-# Shift işlemleri (Data Leakage Önlemi)
 df['LAG_1'] = df.groupby('INSTITUTION')['TOTAL_PASSENGERS'].shift(1)
 df['LAG_7'] = df.groupby('INSTITUTION')['TOTAL_PASSENGERS'].shift(7)
 
-# Rolling Means
 df['ROLLING_7_MEAN'] = df.groupby('INSTITUTION')['TOTAL_PASSENGERS'].transform(lambda x: x.shift(1).rolling(7).mean())
 df['ROLLING_30_MEAN'] = df.groupby('INSTITUTION')['TOTAL_PASSENGERS'].transform(lambda x: x.shift(1).rolling(30).mean())
 
-# NaN değerleri temizle
 df = df.dropna(subset=['LAG_1', 'LAG_7', 'ROLLING_7_MEAN', 'ROLLING_30_MEAN'])
 
 # --- 2. DATA SPLITTING & PREPARATION ---
@@ -80,19 +89,17 @@ train_size = int(len(df) * 0.80)
 train_df = df.iloc[:train_size].copy()
 test_df = df.iloc[train_size:].copy()
 
-# Label Encoding for Institution
 le_inst = LabelEncoder()
 train_df['INSTITUTION_ENC'] = le_inst.fit_transform(train_df['INSTITUTION'])
-# Test setinde bilinmeyen kurum gelirse -1 yap
 test_df['INSTITUTION_ENC'] = test_df['INSTITUTION'].apply(
     lambda x: le_inst.transform([x])[0] if x in le_inst.classes_ else -1)
 
-# Prepare Features
-features = ['INSTITUTION_ENC', 'MONTH', 'WEEKDAY', 'IS_WEEKEND', 'LAG_1', 'LAG_7', 'ROLLING_7_MEAN', 'ROLLING_30_MEAN']
+# --- FEATURES LİSTESİNE IS_HOLIDAY EKLENDİ ---
+features = ['INSTITUTION_ENC', 'MONTH', 'WEEKDAY', 'IS_WEEKEND', 'IS_HOLIDAY', 'LAG_1', 'LAG_7', 'ROLLING_7_MEAN', 'ROLLING_30_MEAN']
+
 train_df = pd.get_dummies(train_df, columns=['SEASON'], drop_first=True)
 test_df = pd.get_dummies(test_df, columns=['SEASON'], drop_first=True)
 
-# Sütun eşitleme
 for col in train_df.columns:
     if col not in test_df.columns:
         test_df[col] = 0
@@ -107,7 +114,7 @@ y_test = test_df['TOTAL_PASSENGERS']
 # --- 3. MODEL TRAINING ---
 print("Training models...")
 
-# MODEL 1: Ridge Regression (Scaled)
+# Ridge Regression
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
@@ -116,7 +123,7 @@ lr = Ridge(alpha=1.0)
 lr.fit(X_train_scaled, y_train)
 y_pred_lr = lr.predict(X_test_scaled)
 
-# MODEL 2: Random Forest (Optimized)
+# Random Forest
 rf = RandomForestRegressor(n_estimators=100, max_depth=15, min_samples_leaf=4, random_state=42, n_jobs=-1)
 rf.fit(X_train, y_train)
 y_pred_rf = rf.predict(X_test)
@@ -133,22 +140,14 @@ mape_lr = mean_absolute_percentage_error(y_test_valid, y_pred_lr_valid)
 rmse_rf = np.sqrt(mean_squared_error(y_test_valid, y_pred_rf_valid))
 mape_rf = mean_absolute_percentage_error(y_test_valid, y_pred_rf_valid)
 
-# --- 4. EVALUATION & OVERFITTING CHECK ---
-
-
-
+# Overfitting Check
 print("\n" + "="*60)
 print("OVERFITTING CHECK (Train vs Test)")
 print("="*60)
-
-# Random Forest için Train Performansı
 y_train_pred = rf.predict(X_train)
-
-# Train setinde de 0'a bölüm hatasını engellemek için filtre (Test ile aynı mantık)
 mask_train = y_train > 50
 y_train_valid = y_train[mask_train]
 y_train_pred_valid = y_train_pred[mask_train]
-
 mape_train = mean_absolute_percentage_error(y_train_valid, y_train_pred_valid)
 
 print(f"Random Forest TRAIN MAPE: %{mape_train*100:.2f}")
@@ -177,18 +176,12 @@ print(f"   - RMSE: {rmse_rf:,.0f}")
 print(f"   - MAPE: %{mape_rf * 100:.2f}")
 print("=" * 60)
 
-# --- LEAKAGE / BASELINE CHECK ---
+# Leakage Check
 print("\n" + "="*60)
 print("LEAKAGE & BASELINE KONTROLÜ")
 print("="*60)
-
-# 1. Naive Model (Aptal Model): Tahmin = Geçen Hafta Aynı Gün (Lag 7)
-# Lag 7 zaten X_test içinde var, onu direkt tahmin gibi düşünelim.
-# Scale edilmemiş orijinal X_test'e ihtiyacımız var (RF için kullandığımız)
 naive_forecast = X_test['LAG_7']
-
-# Naive Modelin Hatasını Hesapla
-mask_naive = y_test > 50 # Sıfıra bölme hatası önlemi
+mask_naive = y_test > 50
 rmse_naive = np.sqrt(mean_squared_error(y_test[mask_naive], naive_forecast[mask_naive]))
 mape_naive = mean_absolute_percentage_error(y_test[mask_naive], naive_forecast[mask_naive])
 
@@ -196,16 +189,14 @@ print(f"NAIVE MODEL (Sadece Geçen Haftayı Kopyala):")
 print(f"   - MAPE: %{mape_naive*100:.2f}")
 print("-" * 60)
 print(f"SENİN MODELİN (Random Forest):")
-print(f"   - MAPE: %{mape_rf*100:.2f}") # Kodun önceki kısmından gelen değer
+print(f"   - MAPE: %{mape_rf*100:.2f}")
 print("-" * 60)
 
 if mape_rf < mape_naive:
-    print(">> SONUÇ: GÜVENLİ ")
+    print(">> SONUÇ: GÜVENLİ ✅")
     print("   Modelin, sadece geçen haftayı kopyalamaktan DAHA İYİSİNİ yapıyor.")
-    print("   Yani mevsimselliği ve trendi gerçekten öğrenmiş.")
 else:
-    print(">> SONUÇ: ŞÜPHELİ ")
-    print("   Modelin Naive modelden daha kötü veya aynı. Leakage yok ama model gereksiz.")
+    print(">> SONUÇ: ŞÜPHELİ ⚠️")
 
 # --- 5. VISUALIZATION ---
 print("Generating professional plots...")
