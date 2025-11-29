@@ -24,6 +24,7 @@ plt.rcParams.update({'font.size': 12, 'figure.figsize': (12, 8)})
 def create_residual_vs_predicted_plot(y_test, preds, model_name, output_dir, color):
     """
     İSTENİLEN GRAFİK: Residuals (Actual - Predicted) vs Predicted Values
+    Revize: Başlık yok, İngilizce Eksenler.
     """
     residuals = y_test - preds
 
@@ -32,10 +33,11 @@ def create_residual_vs_predicted_plot(y_test, preds, model_name, output_dir, col
     # Scatter plot çizimi
     plt.scatter(preds, residuals, alpha=0.5, color=color, s=40, edgecolor='k', linewidth=0.3)
 
-    # Sıfır noktasına referans çizgisi (Hatasız tahmin çizgisi)
+    # Sıfır noktasına referans çizgisi
     plt.axhline(0, color='black', linestyle='--', linewidth=2)
 
-    plt.title(f'Residuals vs Predicted Values ({model_name})', fontsize=16, fontweight='bold')
+    # BAŞLIK KALDIRILDI
+
     plt.xlabel(f'Predicted Values ({model_name})', fontsize=12)
     plt.ylabel('Residuals (Actual - Predicted)', fontsize=12)
 
@@ -46,18 +48,39 @@ def create_residual_vs_predicted_plot(y_test, preds, model_name, output_dir, col
     plt.close()
 
 
-def create_friend_style_line_plot(y_test, preds_rf, preds_xgb, institution_name, target_col, output_dir):
+def create_friend_style_line_plot(y_test, preds_ridge, preds_rf, preds_xgb, institution_name, target_col, output_dir):
+    """
+    ANA GRAFİK:
+    - Ridge rengi YEŞİL yapıldı.
+    - Son 100 gün
+    - Başlık yok, İngilizce etiketler
+    """
     plt.figure(figsize=(15, 7))
-    y_test = y_test.reset_index(drop=True)
 
-    plt.plot(y_test, color='black', label='Gerçek (Actual)', linewidth=2, alpha=0.8)
-    plt.plot(preds_rf, color='#1f77b4', label='Random Forest', linewidth=1.5, alpha=0.7)
-    plt.plot(preds_xgb, color='#d62728', label='XGBoost', linewidth=1.5, linestyle='--', alpha=0.9)
+    # Sadece son 100 günü alıyoruz
+    y_test_subset = y_test.reset_index(drop=True).tail(100)
 
-    plt.title(f'{institution_name} - {target_col}: Model Karşılaştırması', fontsize=16)
-    plt.xlabel('Günler (Test Süreci)')
-    plt.ylabel('Yolcu Sayısı')
-    plt.legend()
+    # Numpy array slicing
+    preds_ridge_subset = preds_ridge[-100:]
+    preds_rf_subset = preds_rf[-100:]
+    preds_xgb_subset = preds_xgb[-100:]
+
+    # X ekseni için indeksleri resetle
+    x_axis = range(len(y_test_subset))
+
+    plt.plot(x_axis, y_test_subset.values, color='black', label='Actual', linewidth=2, alpha=0.85)
+
+    # --- DEĞİŞİKLİK BURADA: GRİ YERİNE YEŞİL (#2ca02c) ---
+    plt.plot(x_axis, preds_ridge_subset, color='#2ca02c', label='Ridge', linewidth=1.5, alpha=0.8)
+
+    plt.plot(x_axis, preds_rf_subset, color='#1f77b4', label='Random Forest', linewidth=1.5, alpha=0.8)
+    plt.plot(x_axis, preds_xgb_subset, color='#d62728', label='XGBoost', linewidth=1.5, linestyle='--', alpha=0.9)
+
+    # BAŞLIK YOK
+
+    plt.xlabel('Days (Test Period - Last 100 Days)')
+    plt.ylabel('Passenger Count')
+    plt.legend(loc='upper right', frameon=True)
     plt.tight_layout()
     plt.savefig(f"{output_dir}/02_friend_style_line_chart.png")
     plt.close()
@@ -70,11 +93,11 @@ def create_dual_scatter_plot(y_test, preds_rf, preds_xgb, institution_name, targ
 
     max_val = max(y_test.max(), preds_rf.max(), preds_xgb.max())
     min_val = min(y_test.min(), preds_rf.min(), preds_xgb.min())
-    plt.plot([min_val, max_val], [min_val, max_val], 'k--', lw=2, label='İdeal Çizgi')
+    plt.plot([min_val, max_val], [min_val, max_val], 'k--', lw=2, label='Ideal Line')
 
-    plt.title(f'{institution_name}: RF vs XGBoost (Noktasal Dağılım)', fontsize=16)
-    plt.xlabel('Gerçek Değerler')
-    plt.ylabel('Tahminler')
+    # BAŞLIK YOK & DİL İNGİLİZCE
+    plt.xlabel('Actual Values')
+    plt.ylabel('Predictions')
     plt.legend()
     plt.tight_layout()
     plt.savefig(f"{output_dir}/01_dual_scatter.png")
@@ -107,7 +130,6 @@ def create_comparison_plot(metrics_df, output_dir):
     add_labels(bars1, ax1)
     add_labels(bars2, ax2, is_percent=True)
 
-    plt.title("Model Yarışı: Hata Skorları")
     plt.tight_layout()
     plt.savefig(f"{output_dir}/00_model_comparison.png")
     plt.close()
@@ -121,7 +143,10 @@ def create_detailed_plots(model, X_test, y_test, preds, institution_name, target
     residuals = y_test - preds
     plt.figure(figsize=(10, 6))
     sns.histplot(residuals, bins=40, kde=True, color='#1f77b4', edgecolor='black')
-    plt.title(f'{model_name} Hata Dağılımı (Histogram)', fontsize=16)
+
+    # DİL İNGİLİZCE & EKSENLER EKLENDİ
+    plt.xlabel("Residuals")
+    plt.ylabel("Frequency")
     plt.axvline(0, color='red', linestyle='--')
     plt.savefig(f"{output_dir}/{base_name}_residuals_hist.png")
     plt.close()
@@ -129,10 +154,12 @@ def create_detailed_plots(model, X_test, y_test, preds, institution_name, target
     # Timeline Zoom
     plt.figure(figsize=(15, 7))
     idx = range(len(y_test))
-    plt.plot(idx, y_test.values, marker='', linestyle='-', color='black', label='Gerçek', linewidth=1.5, alpha=0.8)
-    plt.plot(idx, preds, marker='', linestyle='--', color='#d62728', label=f'{model_name} Tahmini', linewidth=1.5)
+    plt.plot(idx, y_test.values, marker='', linestyle='-', color='black', label='Actual', linewidth=1.5, alpha=0.8)
+    plt.plot(idx, preds, marker='', linestyle='--', color='#d62728', label=f'{model_name} Prediction', linewidth=1.5)
 
-    plt.title(f'{model_name} Performans (Zaman Serisi)', fontsize=16)
+    # DİL İNGİLİZCE & EKSENLER EKLENDİ
+    plt.xlabel("Days (Test Period)")
+    plt.ylabel("Passenger Count")
     plt.legend()
     plt.savefig(f"{output_dir}/{base_name}_timeline.png")
     plt.close()
@@ -206,7 +233,7 @@ def train_ultimate_model(df, target_col="STUDENT", institution_name="Hepsi", mod
     print("\n>>> MODELLER EĞİTİLİYOR...")
     results = []
 
-    # --- MODEL 1: Ridge (Gri/Slate Rengi) ---
+    # --- MODEL 1: Ridge (Yeşil Renk) ---
     scaler = StandardScaler()
     X_train_s = scaler.fit_transform(X_train)
     X_test_s = scaler.transform(X_test)
@@ -216,8 +243,9 @@ def train_ultimate_model(df, target_col="STUDENT", institution_name="Hepsi", mod
 
     results.append({'Model': 'Ridge', 'RMSE': np.sqrt(mean_squared_error(y_test, p_ridge)),
                     'MAPE': mean_absolute_percentage_error(y_test, p_ridge) * 100})
-    # İSTENEN GRAFİK: RIDGE İÇİN
-    create_residual_vs_predicted_plot(y_test, p_ridge, "Ridge", output_dir, color="#7f8c8d")
+
+    # --- DEĞİŞİKLİK BURADA: GRİ (#7f8c8d) YERİNE YEŞİL (#2ca02c) ---
+    create_residual_vs_predicted_plot(y_test, p_ridge, "Ridge", output_dir, color="#2ca02c")
 
     # --- MODEL 2: Random Forest (Mavi Renk) ---
     rf = RandomForestRegressor(n_estimators=100, max_depth=15, n_jobs=-1, random_state=42)
@@ -226,7 +254,6 @@ def train_ultimate_model(df, target_col="STUDENT", institution_name="Hepsi", mod
 
     results.append({'Model': 'Random Forest', 'RMSE': np.sqrt(mean_squared_error(y_test, p_rf)),
                     'MAPE': mean_absolute_percentage_error(y_test, p_rf) * 100})
-    # İSTENEN GRAFİK: RF İÇİN
     create_residual_vs_predicted_plot(y_test, p_rf, "RF", output_dir, color="#1f77b4")
 
     # --- MODEL 3: XGBoost (Kırmızı Renk) ---
@@ -236,7 +263,6 @@ def train_ultimate_model(df, target_col="STUDENT", institution_name="Hepsi", mod
 
     results.append({'Model': 'XGBoost', 'RMSE': np.sqrt(mean_squared_error(y_test, p_xgb)),
                     'MAPE': mean_absolute_percentage_error(y_test, p_xgb) * 100})
-    # İSTENEN GRAFİK: XGB İÇİN
     create_residual_vs_predicted_plot(y_test, p_xgb, "XGB", output_dir, color="#d62728")
 
     # --- RAPORLAMA ---
@@ -246,7 +272,7 @@ def train_ultimate_model(df, target_col="STUDENT", institution_name="Hepsi", mod
 
     create_comparison_plot(results_df, output_dir)
     create_dual_scatter_plot(y_test, p_rf, p_xgb, institution_name, target_col, output_dir)
-    create_friend_style_line_plot(y_test, p_rf, p_xgb, institution_name, target_col, output_dir)
+    create_friend_style_line_plot(y_test, p_ridge, p_rf, p_xgb, institution_name, target_col, output_dir)
 
     selected_model = xgb_model if model_type == "XGBoost" else rf
     selected_preds = p_xgb if model_type == "XGBoost" else p_rf
