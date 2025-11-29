@@ -24,6 +24,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\regression\izmirim-kart-CLEANED.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value=";" />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\regression\izmirim-kart-ulasim-istatistikleri-guncel-extended.csv">
           <value>
             <Attribute>
