@@ -17,6 +17,20 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\data\old-data\izmirim-kart-ulasim-istatistikleri.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value=";" />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\regression\izmirim-kart-ulasim-istatistikleri-guncel-extended.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value=";" />
+            </Attribute>
+          </value>
+        </entry>
       </map>
     </option>
   </component>

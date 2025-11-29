@@ -1,54 +1,52 @@
 import pandas as pd
-from regressiontwo import train_general_xgboost_model
+# regressions.py ile aynı klasörde olmalıdır
+from dt_based_regressions import train_ultimate_model
 
 
-def run_test_scenario():
-    # ==========================================
-    # KONTROL PANELI
-    # ==========================================
+def run_ultimate_test():
+    # CSV Dosyanızın Tam Adı
+    DOSYA_YOLU = "izmirim-kart-ulasim-istatistikleri-guncel-extended.csv"
 
-    SECILEN_KURUM = "ÝZTAÞIT KÝRAZ"  # Orn: Eshot, Metro, Izban
-    SECILEN_KART = "STUDENT"  # Orn: STUDENT, FULL_FARE
+    # PARAMETRELER
+    SECILEN_KURUM = "Hepsi"  # Örn: Eshot, Metro, Hepsi
+    SECILEN_KART = "Hepsi"  # Örn: STUDENT, FULL_FARE, Hepsi
+    SECILEN_MODEL = "Random Forest"  # Grafiklerde hepsi çıkacak ama detay analizi bunun için yapılacak
 
-    # --- TARIH AYARI ---
-    # Filtrelemek isterseniz tarih girin: "2023-07-01"
-    # Filtreyi KAPATMAK (Tum veri) icin: None
-    BASLANGIC_TARIHI = None
-
-    # ==========================================
-
-    print("--------------------------------------------------")
-    print(f"TAHMIN ALGORITMASI: {SECILEN_KURUM.upper()} - {SECILEN_KART}")
-    print(f"Tarih Modu: {BASLANGIC_TARIHI if BASLANGIC_TARIHI else 'TUM TARIHCE'}")
-    print("--------------------------------------------------")
-
-    file_path = "izmirim-kart-ulasim-istatistikleri-guncel-extended.csv"
+    print("\n" + "=" * 60)
+    print(f" ULTIMATE TAHMİN MOTORU ÇALIŞTIRILIYOR")
+    print(f" Hedef: {SECILEN_KURUM} - {SECILEN_KART}")
+    print("=" * 60)
 
     try:
-        df = pd.read_csv(file_path, sep=";")
-        print(f"Veri Seti Yuklendi. Toplam Satir: {len(df)}")
-    except FileNotFoundError:
-        print(f"HATA: '{file_path}' bulunamadi!")
-        return
+        print(f" Veri okunuyor: {DOSYA_YOLU} ...")
+        # Noktalı virgül (;) ile ayrılmışsa sep=";" kullanın
+        df = pd.read_csv(DOSYA_YOLU, sep=";")
 
-    try:
-        # Tarih parametresini gonderiyoruz
-        model, results_table = train_general_xgboost_model(
+        print(f" Veri yüklendi. Satır sayısı: {len(df)}")
+        print("-" * 30)
+
+        # Modeli eğit ve grafikleri oluştur
+        model = train_ultimate_model(
             df,
             target_col=SECILEN_KART,
             institution_name=SECILEN_KURUM,
-            start_date=BASLANGIC_TARIHI  # <--- YENI PARAMETRE
+            model_type=SECILEN_MODEL
         )
 
-        print("\n" + "=" * 80)
-        print(f"SONUC RAPORU ({SECILEN_KURUM} - {SECILEN_KART})")
-        print("=" * 80)
-        print(results_table.to_string(index=False))
-        print("=" * 80)
+        print("\n" + "=" * 60)
+        print(" İŞLEM TAMAMLANDI!")
+        print(f" Şu grafikleri 'plots' klasöründe bulabilirsin:")
+        print(" 1. Residuals_vs_Predicted_XGB.png (Kırmızı - İstenilen Grafik)")
+        print(" 2. Residuals_vs_Predicted_RF.png (Mavi - İstenilen Grafik)")
+        print(" 3. Residuals_vs_Predicted_Ridge.png (Gri - İstenilen Grafik)")
+        print(" 4. 00_model_comparison.png (Bar Chart)")
+        print("=" * 60)
 
+    except FileNotFoundError:
+        print(f"\n HATA: '{DOSYA_YOLU}' bulunamadı!")
     except Exception as e:
-        print(f"\nHata olustu:\n{e}")
+        print(f"\n HATA OLUŞTU:\n{e}")
 
 
 if __name__ == "__main__":
-    run_test_scenario()
+    run_ultimate_test()
