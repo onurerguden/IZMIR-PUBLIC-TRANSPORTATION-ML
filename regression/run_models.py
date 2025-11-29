@@ -7,10 +7,10 @@ def run_test():
 
     # PARAMETRELER (Manuel Tarih Ayarı Buradan Yapılır)
     SECILEN_KURUM = "Metro"
-    SECILEN_KART = "Hepsi"
+    SECILEN_KART = "BANK CARD"
     SECILEN_MODEL = "RandomForest"
     # Gelecek tahmini veya filtreleme için tarih buraya girilir:
-    BASLANGIC_TARIHI = ""
+    BASLANGIC_TARIHI = "2023-09-21"
 
     print("\n" + "=" * 60)
     print(f" TAHMIN MOTORU CALISTIRILIYOR")
