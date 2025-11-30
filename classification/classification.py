@@ -387,7 +387,6 @@ def plot_all_confusion_matrices(models_dict, X_test, y_test, label_encoder, outp
                         annot_kws={"size": 12}, cbar=True)
 
             # Başlık ve Etiketler
-            plt.title(f'Confusion Matrix (Normalized)\n{model_name}', fontsize=14, fontweight='bold', pad=15)
             plt.ylabel('Gerçek Sınıf (True)', fontsize=12)
             plt.xlabel('Tahmin Edilen Sınıf (Predicted)', fontsize=12)
 
