@@ -10,7 +10,7 @@ def main():
 
     # 2. Aykırı değer tespiti
     if "MONTH" not in df.columns:
-        df["MONTH"] = pd.to_datetime(df["DATE"]).dt.month
+        df["MONTH"] = pd.to_datetime(df["DATE"],dayfirst=True).dt.month
 
     numeric_cols = df.select_dtypes(include=["int64", "float64"]).columns.tolist()
     print("Numeric columns to process:", numeric_cols)
@@ -35,10 +35,12 @@ def main():
     # 6. PCA (2D ve 3D Görselleştirme)
     print("\n--- PCA (2D) ---")
     pca_df_2d, variance_2d = apply_PCA(df, 2)
+    pca_df_2d["INSTITUTION"] = df["INSTITUTION"].values
     plot_PCA_in_2D(pca_df_2d)
 
     print("\n--- PCA (3D) ---")
     pca_df_3d, variance_3d = apply_PCA(df, 3)
+    pca_df_3d["INSTITUTION"] = df["INSTITUTION"].values
     plot_PCA_in_3D(pca_df_3d, "teal")
 
 if __name__ == "__main__":
