@@ -341,3 +341,259 @@ def train_model(df, target_col="STUDENT", institution_name="Hepsi", model_type="
     create_detailed_plots(selected_model, X_test, y_test, selected_preds, institution_name, target_col, model_type)
 
     return selected_model
+
+
+def create_time_series_comparison_plots(df, output_dir="plots"):
+    """
+    Akademik makale için 3 profesyonel zaman serisi grafiği oluşturur.
+
+    Grafik 1: Student vs Full Fare - Yıllık döngü (günlük ortalamaları)
+    Grafik 2: Bank Card - Yıllık döngü (günlük ortalamaları)
+    Grafik 3: Yıllık toplam kullanım karşılaştırması
+    """
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import pandas as pd
+    import os
+    import numpy as np
+    from matplotlib.dates import DateFormatter, MonthLocator
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Veriyi hazırla
+    df_plot = df.copy()
+    df_plot["DATE"] = pd.to_datetime(df_plot["DATE"], format='mixed', dayfirst=True)
+    df_plot = df_plot.sort_values("DATE")
+
+    # Günlük toplamları al
+    daily_data = df_plot.groupby('DATE').agg({
+        'STUDENT': 'sum',
+        'FULL_FARE': 'sum',
+        'BANK CARD': 'sum',
+        'TEACHER': 'sum',
+        'SIXTY_YEARS_OLD': 'sum',
+        'TICKET': 'sum',
+        'CHILD': 'sum',
+        'PERSONNEL': 'sum',
+        'FREE': 'sum'
+    }).reset_index()
+
+    # ============================================================
+    # GRAFİK 1: Student vs Full Fare (YILLIK DÖNGÜ - GÜNLÜK ORTALAMALAR)
+    # ============================================================
+
+    # Ay ve gün bilgisini ekle
+    daily_data['MONTH'] = daily_data['DATE'].dt.month
+    daily_data['DAY'] = daily_data['DATE'].dt.day
+    daily_data['DAY_OF_YEAR'] = daily_data['DATE'].dt.dayofyear
+
+    # Her günün (tüm yılların) ortalamasını al
+    daily_avg = daily_data.groupby('DAY_OF_YEAR').agg({
+        'STUDENT': 'mean',
+        'FULL_FARE': 'mean'
+    }).reset_index()
+
+    # 7-day MA uygula (daha smooth olması için)
+    daily_avg['STUDENT_MA7'] = daily_avg['STUDENT'].rolling(window=7, center=True).mean()
+    daily_avg['FULL_FARE_MA7'] = daily_avg['FULL_FARE'].rolling(window=7, center=True).mean()
+
+    # X ekseni için tarih oluştur (2024 yılını referans alalım - leap year)
+    from datetime import datetime, timedelta
+    base_date = datetime(2024, 1, 1)
+    daily_avg['DATE_DISPLAY'] = daily_avg['DAY_OF_YEAR'].apply(lambda x: base_date + timedelta(days=x - 1))
+
+    fig, ax = plt.subplots(figsize=(16, 7))
+
+    # 7-day MA çizgileri
+    ax.plot(daily_avg['DATE_DISPLAY'], daily_avg['STUDENT_MA7'],
+            color='#2E86AB', linewidth=2.5, alpha=0.9, label='Student (Daily Avg)')
+    ax.plot(daily_avg['DATE_DISPLAY'], daily_avg['FULL_FARE_MA7'],
+            color='#A23B72', linewidth=2.5, alpha=0.9, label='Full Fare (Daily Avg)')
+
+    # Tarih formatı (sadece ay göster)
+    ax.xaxis.set_major_formatter(DateFormatter('%b'))
+    ax.xaxis.set_major_locator(MonthLocator(interval=1))
+    plt.xticks(fontsize=11)
+
+    ax.set_xlabel('Month', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Average Daily Passenger Count', fontsize=14, fontweight='bold')
+    ax.legend(loc='upper left', frameon=True, fontsize=12, shadow=True, fancybox=True)
+    ax.grid(True, alpha=0.25, linestyle='--', linewidth=0.7)
+
+    # Y ekseni formatı
+    from matplotlib.ticker import FuncFormatter
+    def thousands(x, pos):
+        return f'{x / 1000:.0f}K'
+
+    ax.yaxis.set_major_formatter(FuncFormatter(thousands))
+
+    plt.tight_layout()
+    plt.savefig(f"{output_dir}/timeseries_01_student_vs_fullfare.png", dpi=300, bbox_inches='tight')
+    plt.close()
+
+    print(f"✓ Grafik 1 oluşturuldu: Student vs Full Fare (Yıllık Döngü - Günlük Ortalama)")
+
+    # ============================================================
+    # GRAFİK 2: Bank Card (YILLIK DÖNGÜ - GÜNLÜK ORTALAMALAR)
+    # ============================================================
+
+    # 2023-08'den itibaren filtrele
+    bank_card_start = pd.to_datetime('2023-08-01')
+    bank_data = daily_data[daily_data['DATE'] >= bank_card_start].copy()
+
+    # Her günün (tüm yılların) ortalamasını al
+    bank_daily_avg = bank_data.groupby('DAY_OF_YEAR').agg({
+        'BANK CARD': 'mean'
+    }).reset_index()
+
+    # 7-day MA uygula
+    bank_daily_avg['BANK_CARD_MA7'] = bank_daily_avg['BANK CARD'].rolling(window=7, center=True).mean()
+
+    # X ekseni için tarih oluştur
+    bank_daily_avg['DATE_DISPLAY'] = bank_daily_avg['DAY_OF_YEAR'].apply(lambda x: base_date + timedelta(days=x - 1))
+
+    fig, ax = plt.subplots(figsize=(16, 7))
+
+    # 7-day MA çizgisi
+    ax.plot(bank_daily_avg['DATE_DISPLAY'], bank_daily_avg['BANK_CARD_MA7'],
+            color='#F18F01', linewidth=2.5, alpha=0.9, label='Bank Card (Daily Avg)')
+
+    # Tarih formatı
+    ax.xaxis.set_major_formatter(DateFormatter('%b'))
+    ax.xaxis.set_major_locator(MonthLocator(interval=1))
+    plt.xticks(fontsize=11)
+
+    ax.set_xlabel('Month', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Average Daily Bank Card Usage', fontsize=14, fontweight='bold')
+    ax.legend(loc='upper left', frameon=True, fontsize=12, shadow=True, fancybox=True)
+    ax.grid(True, alpha=0.25, linestyle='--', linewidth=0.7)
+
+    # Y ekseni formatı
+    ax.yaxis.set_major_formatter(FuncFormatter(thousands))
+
+    plt.tight_layout()
+    plt.savefig(f"{output_dir}/timeseries_02_bankcard_trend.png", dpi=300, bbox_inches='tight')
+    plt.close()
+
+    print(f"✓ Grafik 2 oluşturuldu: Bank Card (Yıllık Döngü - Günlük Ortalama)")
+
+    # ============================================================
+    # GRAFİK 3: YILLIK TOPLAM KULLANIM KARŞILAŞTIRMASI
+    # ============================================================
+
+    # Tüm kartların toplamını hesapla
+    card_columns = ['STUDENT', 'FULL_FARE', 'BANK CARD', 'TEACHER',
+                    'SIXTY_YEARS_OLD', 'TICKET', 'CHILD', 'PERSONNEL', 'FREE']
+    daily_data['TOTAL_ALL_CARDS'] = daily_data[card_columns].sum(axis=1)
+
+    # Yıl bilgisini ekle
+    daily_data['YEAR'] = daily_data['DATE'].dt.year
+
+    # Yıllık toplamları hesapla
+    yearly_totals = daily_data.groupby('YEAR').agg({
+        'STUDENT': 'sum',
+        'FULL_FARE': 'sum',
+        'BANK CARD': 'sum',
+        'TOTAL_ALL_CARDS': 'sum'
+    }).reset_index()
+
+    # Son yıl henüz tamamlanmadıysa işaretle
+    max_date = daily_data['DATE'].max()
+    current_year = max_date.year
+    yearly_totals['INCOMPLETE'] = False
+    if max_date.month < 12 or max_date.day < 31:
+        yearly_totals.loc[yearly_totals['YEAR'] == current_year, 'INCOMPLETE'] = True
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 7))
+
+    # SOL PANEL: Toplam Yıllık Kullanım (Çubuk Grafik)
+    colors = plt.cm.viridis(np.linspace(0.3, 0.9, len(yearly_totals)))
+    bars = ax1.bar(yearly_totals['YEAR'], yearly_totals['TOTAL_ALL_CARDS'] / 1e6,
+                   color=colors, alpha=0.85, edgecolor='black', linewidth=1.5, width=0.6)
+
+    # Değerleri çubukların üzerine yaz
+    for i, row in yearly_totals.iterrows():
+        year = row['YEAR']
+        total = row['TOTAL_ALL_CARDS']
+        label = f'{total / 1e6:.1f}M'
+        if row['INCOMPLETE']:
+            label += '*'
+        ax1.text(year, total / 1e6 + 0.5, label, ha='center', va='bottom',
+                 fontsize=12, fontweight='bold')
+
+    ax1.set_xlabel('Year', fontsize=14, fontweight='bold')
+    ax1.set_ylabel('Total Annual Usage (Millions)', fontsize=14, fontweight='bold')
+    ax1.set_xticks(yearly_totals['YEAR'])
+    ax1.grid(True, alpha=0.25, linestyle='--', linewidth=0.7, axis='y')
+
+    # SAĞ PANEL: Kart Türlerine Göre Yıllık Dağılım (Çizgi Grafik)
+    ax2.plot(yearly_totals['YEAR'], yearly_totals['STUDENT'] / 1e6,
+             marker='o', linewidth=3, markersize=10, label='Student', color='#2E86AB',
+             markeredgewidth=2, markeredgecolor='white')
+    ax2.plot(yearly_totals['YEAR'], yearly_totals['FULL_FARE'] / 1e6,
+             marker='s', linewidth=3, markersize=10, label='Full Fare', color='#A23B72',
+             markeredgewidth=2, markeredgecolor='white')
+    ax2.plot(yearly_totals['YEAR'], yearly_totals['BANK CARD'] / 1e6,
+             marker='^', linewidth=3, markersize=10, label='Bank Card', color='#F18F01',
+             markeredgewidth=2, markeredgecolor='white')
+
+    ax2.set_xlabel('Year', fontsize=14, fontweight='bold')
+    ax2.set_ylabel('Annual Usage by Card Type (Millions)', fontsize=14, fontweight='bold')
+    ax2.set_xticks(yearly_totals['YEAR'])
+    ax2.legend(loc='upper left', frameon=True, fontsize=11, shadow=True, fancybox=True)
+    ax2.grid(True, alpha=0.25, linestyle='--', linewidth=0.7)
+
+    plt.tight_layout()
+    plt.savefig(f"{output_dir}/timeseries_03_yearly_comparison.png", dpi=300, bbox_inches='tight')
+    plt.close()
+
+    print(f"✓ Grafik 3 oluşturuldu: Yıllık Kullanım Karşılaştırması")
+
+    # ============================================================
+    # İSTATİSTİKSEL ÖZET
+    # ============================================================
+    print("\n" + "=" * 80)
+    print("ZAMAN SERİSİ ANALİZİ - DETAYLI RAPOR")
+    print("=" * 80)
+
+    print(f"\n📅 VERİ SETİ BİLGİLERİ:")
+    print(f"  • Tarih Aralığı: {daily_data['DATE'].min().date()} → {daily_data['DATE'].max().date()}")
+    print(f"  • Toplam Gün Sayısı: {len(daily_data):,}")
+    print(f"  • Kapsanan Yıllar: {', '.join(map(str, sorted(daily_data['YEAR'].unique())))}")
+
+    print(f"\n📊 GRAFIK 1 - STUDENT vs FULL FARE (Yıllık Döngü - Günlük Ortalamalar):")
+    print(f"  • Toplam Gün: {len(daily_avg)}")
+    print(f"  • Student Yıllık Ortalama: {daily_avg['STUDENT_MA7'].mean():,.0f}")
+    print(f"  • Student En Yüksek: {daily_avg['STUDENT_MA7'].max():,.0f}")
+    print(f"  • Student En Düşük: {daily_avg['STUDENT_MA7'].min():,.0f}")
+    print(f"  • Full Fare Yıllık Ortalama: {daily_avg['FULL_FARE_MA7'].mean():,.0f}")
+    print(f"  • Full Fare En Yüksek: {daily_avg['FULL_FARE_MA7'].max():,.0f}")
+    print(f"  • Full Fare En Düşük: {daily_avg['FULL_FARE_MA7'].min():,.0f}")
+
+    print(f"\n💳 GRAFIK 2 - BANK CARD (Yıllık Döngü - Günlük Ortalamalar):")
+    print(f"  • Toplam Gün: {len(bank_daily_avg)}")
+    print(f"  • Ortalama: {bank_daily_avg['BANK_CARD_MA7'].mean():,.0f}")
+    print(f"  • En Yüksek: {bank_daily_avg['BANK_CARD_MA7'].max():,.0f}")
+    print(f"  • En Düşük: {bank_daily_avg['BANK_CARD_MA7'].min():,.0f}")
+
+    print(f"\n📈 GRAFIK 3 - YILLIK KARŞILAŞTIRMA:")
+    for _, row in yearly_totals.iterrows():
+        year_status = " (Devam Ediyor)*" if row['INCOMPLETE'] else ""
+        print(f"  • {int(row['YEAR'])}{year_status}:")
+        print(f"    - Toplam: {row['TOTAL_ALL_CARDS']:,.0f}")
+        print(f"    - Student: {row['STUDENT']:,.0f}")
+        print(f"    - Full Fare: {row['FULL_FARE']:,.0f}")
+        print(f"    - Bank Card: {row['BANK CARD']:,.0f}")
+
+    # Yıllık büyüme oranı
+    if len(yearly_totals) > 1:
+        print(f"\n📊 YILLIK BÜYÜME ANALİZİ:")
+        for i in range(1, len(yearly_totals)):
+            prev_year = yearly_totals.iloc[i - 1]
+            curr_year = yearly_totals.iloc[i]
+            if prev_year['TOTAL_ALL_CARDS'] > 0:
+                growth_rate = ((curr_year['TOTAL_ALL_CARDS'] - prev_year['TOTAL_ALL_CARDS']) / prev_year[
+                    'TOTAL_ALL_CARDS']) * 100
+                print(f"  • {int(prev_year['YEAR'])} → {int(curr_year['YEAR'])}: {growth_rate:+.1f}% değişim")
+
+    print("=" * 80 + "\n")
