@@ -2,15 +2,16 @@ import pandas as pd
 # Dosya adını değiştirdiğimiz için import da değişti
 from dt_based_regressions import train_model
 
+
 def run_test():
     DOSYA_YOLU = "izmirim-kart-ulasim-istatistikleri-guncel-extended.csv"
 
     # PARAMETRELER (Manuel Tarih Ayarı Buradan Yapılır)
-    SECILEN_KURUM = "Metro"
-    SECILEN_KART = "BANK CARD"
+    SECILEN_KURUM = "Hepsi"
+    SECILEN_KART = "Hepsi"
     SECILEN_MODEL = "RandomForest"
     # Gelecek tahmini veya filtreleme için tarih buraya girilir:
-    BASLANGIC_TARIHI = "2023-09-21"
+    BASLANGIC_TARIHI = ""
 
     print("\n" + "=" * 60)
     print(f" TAHMIN MOTORU CALISTIRILIYOR")
@@ -31,6 +32,7 @@ def run_test():
             model_type=SECILEN_MODEL,
             start_date=BASLANGIC_TARIHI
         )
+
 
         print("\n" + "=" * 60)
         print(" ISLEM TAMAMLANDI!")

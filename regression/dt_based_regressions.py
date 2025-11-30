@@ -70,22 +70,46 @@ def create_dual_scatter_plot(y_test, preds_rf, preds_xgb, institution_name, targ
 
 
 def create_comparison_plot(metrics_df, output_dir):
-    fig, ax1 = plt.subplots(figsize=(12, 7))
+    fig, ax1 = plt.subplots(figsize=(12, 8)) # Yükseklik biraz artırıldı
     x = np.arange(len(metrics_df['Model']))
     width = 0.35
+
+    # --- RMSE ÇUBUKLARI (Sol Eksen) ---
     bars1 = ax1.bar(x - width / 2, metrics_df['RMSE'], width, label='RMSE', color='#4c72b0', alpha=0.9)
     ax1.set_ylabel('RMSE', color='#4c72b0', fontweight='bold')
     ax1.set_xticks(x)
     ax1.set_xticklabels(metrics_df['Model'])
     ax1.tick_params(axis='y', labelcolor='#4c72b0')
+
+    # RMSE Değerlerini Yazdır
+    for bar in bars1:
+        height = bar.get_height()
+        ax1.text(
+            bar.get_x() + bar.get_width() / 2., height,
+            f'{int(height):,}',  # Virgülle ayrılmış tam sayı formatı (örn: 125,000)
+            ha='center', va='bottom', fontsize=10, fontweight='bold', color='#4c72b0'
+        )
+
+    # --- MAPE ÇUBUKLARI (Sağ Eksen) ---
     ax2 = ax1.twinx()
     bars2 = ax2.bar(x + width / 2, metrics_df['MAPE'], width, label='MAPE (%)', color='#c44e52', alpha=0.9)
     ax2.set_ylabel('MAPE (%)', color='#c44e52', fontweight='bold')
     ax2.tick_params(axis='y', labelcolor='#c44e52')
+
+    # MAPE Değerlerini Yazdır
+    for bar in bars2:
+        height = bar.get_height()
+        ax2.text(
+            bar.get_x() + bar.get_width() / 2., height,
+            f'%{height:.2f}',  # Yüzdelik format (örn: %5.42)
+            ha='center', va='bottom', fontsize=10, fontweight='bold', color='#c44e52'
+        )
+
+    # Başlık ve Düzen
+    plt.title("Model Karşılaştırması (RMSE & MAPE)", fontsize=14, pad=20)
     plt.tight_layout()
     plt.savefig(f"{output_dir}/00_model_comparison.png")
     plt.close()
-
 
 def create_detailed_plots(model, X_test, y_test, preds, institution_name, target_col, model_name):
     output_dir = "plots"

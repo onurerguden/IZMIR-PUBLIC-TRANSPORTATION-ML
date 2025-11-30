@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import os
+import statsmodels.api as sm
 
 # --- 1. MATPLOTLIB BACKEND AYARI ---
 import matplotlib
