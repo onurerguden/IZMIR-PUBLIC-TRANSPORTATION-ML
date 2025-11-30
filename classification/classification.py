@@ -320,7 +320,10 @@ def train_and_compare_models_time_series(df):
     #  Bar Plot Comparison
     # =======================
     plt.figure(figsize=(12, 6))
-    bars = plt.bar(results.keys(), results.values(), color=['#3498db', '#9b59b6', '#2ecc71', '#e67e22'])
+    # Çok Koyu Lacivert -> Kobalt -> Gök Mavisi -> Pastel Mavi
+    bars = plt.bar(results.keys(), results.values(),
+                   color=['#002060', '#0047AB', '#0070C0', '#5B9BD5'],
+                   edgecolor='black', linewidth=1)
     plt.ylim(0, 1.0)
     plt.ylabel('Accuracy')
     plt.grid(axis='y', linestyle='--', alpha=0.5)
