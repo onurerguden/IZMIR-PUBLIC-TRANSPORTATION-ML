@@ -506,7 +506,7 @@ if __name__ == "__main__":
     FILE_PATH = "izmirim-kart-ulasim-istatistikleri-guncel-extended.csv"
 
     if not os.path.exists(FILE_PATH):
-        print(f"❌ ERROR: File not found: {FILE_PATH}")
+        print(f" ERROR: File not found: {FILE_PATH}")
         exit(1)
 
     print("=" * 80)
@@ -529,5 +529,5 @@ if __name__ == "__main__":
     analyzer.generate_comparison()
 
     print("\n" + "=" * 80)
-    print("✅ ANALYSIS COMPLETE")
+    print("ANALYSIS COMPLETE")
     print("=" * 80)
