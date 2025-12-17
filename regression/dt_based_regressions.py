@@ -106,7 +106,7 @@ def create_comparison_plot(metrics_df, output_dir):
         )
 
     # Başlık ve Düzen
-    plt.title("Model Karşılaştırması (RMSE & MAPE)", fontsize=14, pad=20)
+
     plt.tight_layout()
     plt.savefig(f"{output_dir}/00_model_comparison.png")
     plt.close()
