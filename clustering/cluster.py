@@ -429,13 +429,6 @@ class TransportClustering:
         ax.legend(loc='best', fontsize=9)
         ax.grid(True, alpha=0.3)
 
-        # Paper-style plot titles
-        if method == "kmeans":
-            ax.set_title("K-Means Clustering – Global Demand Regimes", fontweight='bold')
-        elif method == "dbscan":
-            ax.set_title("DBSCAN Clustering – Density-Based Travel Regimes", fontweight='bold')
-        elif method == "hierarchical":
-            ax.set_title("Hierarchical Clustering – Baseline Structure", fontweight='bold')
 
         plt.tight_layout()
         plt.savefig(f"{self.output_dir}/{method}_clusters.png", dpi=300, bbox_inches='tight')
