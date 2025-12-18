@@ -3,12 +3,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sb
 import numpy as np
-
 import unicodedata
 
 def save_plot(fig, filename):
     # Normalize and clean file names
     target_folder = os.path.join("plots", "preprocessing")
+    # Klasör yoksa oluştur
+    os.makedirs(target_folder, exist_ok=True)
+
     normalized = (
         filename.replace("İ", "I").replace("ı", "i")
         .replace("Ş", "S").replace("ş", "s")
@@ -18,37 +20,37 @@ def save_plot(fig, filename):
         .replace("Ç", "C").replace("ç", "c")
     )
     normalized = unicodedata.normalize("NFKD", normalized).encode("ascii", "ignore").decode("ascii")
-    path = os.path.join(target_folder,normalized)
+    path = os.path.join(target_folder, normalized)
 
-    if not os.path.exists(path):
-        fig.savefig(path, format="pdf", bbox_inches="tight")
-        print(f"Saved: {path}")
-    else:
-        print(f"Plot already exists: {path}")
+    # Dosya zaten varsa üzerine yazmamak için (isteğe bağlı, şu an üzerine yazıyor)
+    # if not os.path.exists(path):
+    fig.savefig(path, format="pdf", bbox_inches="tight")
+    print(f"Saved: {path}")
+    # else:
+    #     print(f"Plot already exists: {path}")
 
 def plot_boxPlots(df):
     numeric_columns = df.select_dtypes(include=['int64', 'float64']).columns
 
     plt.figure(figsize=(14, 8))
 
-# Renk paleti
+    # Renk paleti
     palette = sb.color_palette("Set2", len(numeric_columns))
 
-# Boxplot çiz
+    # Boxplot çiz
     sb.boxplot(data=df[numeric_columns], palette=palette)
 
-# X label rotasyonu
+    # X label rotasyonu
     plt.xticks(rotation=45)
 
-# Log-scale (çok önemli)
+    # Log-scale (çok önemli)
     plt.yscale("log")
 
     plt.gcf().canvas.manager.set_window_title("Box Plots Improved")
 
-# Kaydet
+    # Kaydet
     save_plot(plt.gcf(), "box_plots_improved.pdf")
-
-    plt.show()
+    # plt.show() # Döngüde takılmaması için show'u kapattım, istersen açabilirsin
 
 def plot_barCharts(df):
     counts = df["INSTITUTION"].value_counts().head(20)
@@ -72,12 +74,11 @@ def plot_barCharts(df):
 
     plt.gcf().canvas.manager.set_window_title("Bar Chart - Top 20 Institutions (Improved)")
     save_plot(plt.gcf(), "bar_chart_top20_improved.pdf")
-
-    plt.show()
-
+    # plt.show()
 
 def plot_scatterPlots(df):
-    df["DATE"] = pd.to_datetime(df["DATE"], dayfirst=True)
+    # GÜNCELLEME: format='mixed' eklendi
+    df["DATE"] = pd.to_datetime(df["DATE"], format='mixed', dayfirst=True)
 
     plt.figure(figsize=(12,8))
 
@@ -92,20 +93,17 @@ def plot_scatterPlots(df):
 
     plt.xlabel("FULL_FARE")
     plt.ylabel("STUDENT")
-
     plt.colorbar(label="Month")
 
     plt.gcf().canvas.manager.set_window_title("Scatter Plot - FULL_FARE vs STUDENT (Improved)")
     save_plot(plt.gcf(), "scatter_fullfare_vs_student_improved.pdf")
-
-    plt.show()
-
+    # plt.show()
 
 def plot_linePlots(df):
-    df["DATE"] = pd.to_datetime(df["DATE"], dayfirst=True)
+    # GÜNCELLEME: format='mixed' eklendi
+    df["DATE"] = pd.to_datetime(df["DATE"], format='mixed', dayfirst=True)
 
     eshot = df[df["INSTITUTION"] == "Eshot"].copy()
-
     eshot.set_index("DATE", inplace=True)
 
     monthly_avg = eshot["STUDENT"].resample("M").mean()
@@ -116,8 +114,8 @@ def plot_linePlots(df):
     plt.ylabel("Average Student Count")
     plt.grid(True)
     save_plot(plt.gcf(), "monthly_student_average_count_timeline.pdf")
+    # plt.show()
 
-#plt.show()
 def plot_correlationHeatmap(df):
     numeric_df = df.select_dtypes(include=['int64','float64'])
     corr = numeric_df.corr()
@@ -125,14 +123,15 @@ def plot_correlationHeatmap(df):
     sb.heatmap(corr, annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5)
     plt.gcf().canvas.manager.set_window_title("Correlation Matrix Heatmap")
     save_plot(plt.gcf(), "correlation_heatmap.pdf")
-    #plt.show()
+    # plt.show()
 
 def plot_all_vehicle_user_trends(df):
     """
     Generates monthly usage line charts by user types for all transportation vehicles (INSTITUTION)
     in the Izmirim Kart data.
     """
-    df["DATE"] = pd.to_datetime(df["DATE"], dayfirst=True)
+    # GÜNCELLEME: format='mixed' eklendi
+    df["DATE"] = pd.to_datetime(df["DATE"], format='mixed', dayfirst=True)
     df["MONTH"] = df["DATE"].dt.to_period("M")
 
     user_types = ["FULL_FARE", "STUDENT", "TEACHER", "SIXTY_YEARS_OLD",
@@ -172,7 +171,7 @@ def plot_all_vehicle_user_trends(df):
         plt.gcf().canvas.manager.set_window_title(f"{inst} - Monthly Usage by User Types")
         filename = f"{inst.lower().replace(' ', '_')}_monthly_usage_by_user_types.pdf"
         save_plot(plt.gcf(), filename)
-        #plt.show()
+        plt.close() # Bellek şişmesini önlemek için çizilen figürü kapattım
 
 def plot_PCA_in_2D(pca_df):
     # INSTITUTION'ı sayısal kategoriye dönüştür
@@ -193,8 +192,7 @@ def plot_PCA_in_2D(pca_df):
     plt.colorbar(label="INSTITUTION")
 
     save_plot(plt.gcf(), "pca_2d_visualization_improved.pdf")
-    plt.show()
-
+    # plt.show()
 
 def plot_PCA_in_3D(pca_df,color="blue"):
     fig = plt.figure(figsize=(10, 8))
@@ -222,15 +220,19 @@ def plot_PCA_in_3D(pca_df,color="blue"):
     cbar.set_label("INSTITUTION")
 
     save_plot(plt.gcf(), "pca_3d_visualization_improved.pdf")
-    plt.show()
-
+    # plt.show()
 
 def show_all_plots(df):
+    print("Generating Line Plots...")
     plot_linePlots(df)
+    print("Generating Box Plots...")
     plot_boxPlots(df)
+    print("Generating Bar Charts...")
     plot_barCharts(df)
+    print("Generating Scatter Plots...")
     plot_scatterPlots(df)
+    print("Generating Correlation Heatmap...")
     plot_correlationHeatmap(df)
+    print("Generating All User Trends...")
     plot_all_vehicle_user_trends(df)
-
-
+    print("--- All Visualizations Completed ---")

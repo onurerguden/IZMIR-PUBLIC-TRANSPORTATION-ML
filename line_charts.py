@@ -138,4 +138,4 @@ if __name__ == "__main__":
     # viz.plot_monthly_trend(institution="HEPSI", card_type="DETAYLI")
 
     # 3. SADECE METRO - TOPLAM YOLCU
-    viz.plot_monthly_trend(institution="HEPSI", card_type="BANK CARD")
+    viz.plot_monthly_trend(institution="Metro", card_type="HEPSI")
