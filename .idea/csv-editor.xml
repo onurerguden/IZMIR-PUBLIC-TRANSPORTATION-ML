@@ -10,6 +10,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\classification\izmirim-kart-ulasim-istatistikleri-guncel.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\data\current-data\izmirim-kart-ulasim-istatistikleri-guncel.csv">
           <value>
             <Attribute>
@@ -24,7 +31,7 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="\regression\izmirim-kart-CLEANED.csv">
+        <entry key="\izmirim-kart-ulasim-istatistikleri-guncel-extended.csv">
           <value>
             <Attribute>
               <option name="separator" value=";" />
