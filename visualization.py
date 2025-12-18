@@ -2,14 +2,13 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sb
-from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
 
 import unicodedata
 
 def save_plot(fig, filename):
-    os.makedirs("plots", exist_ok=True)
-
     # Normalize and clean file names
+    target_folder = os.path.join("plots", "preprocessing")
     normalized = (
         filename.replace("İ", "I").replace("ı", "i")
         .replace("Ş", "S").replace("ş", "s")
@@ -19,7 +18,7 @@ def save_plot(fig, filename):
         .replace("Ç", "C").replace("ç", "c")
     )
     normalized = unicodedata.normalize("NFKD", normalized).encode("ascii", "ignore").decode("ascii")
-    path = os.path.join("plots", normalized)
+    path = os.path.join(target_folder,normalized)
 
     if not os.path.exists(path):
         fig.savefig(path, format="pdf", bbox_inches="tight")
@@ -28,57 +27,105 @@ def save_plot(fig, filename):
         print(f"Plot already exists: {path}")
 
 def plot_boxPlots(df):
-    numeric_columns = df.select_dtypes(include=['int64','float64']).columns
-    plt.figure(figsize=(12,8))
-    sb.boxplot(data=df[numeric_columns])
-    plt.title('Box Plots')
+    numeric_columns = df.select_dtypes(include=['int64', 'float64']).columns
+
+    plt.figure(figsize=(14, 8))
+
+# Renk paleti
+    palette = sb.color_palette("Set2", len(numeric_columns))
+
+# Boxplot çiz
+    sb.boxplot(data=df[numeric_columns], palette=palette)
+
+# X label rotasyonu
     plt.xticks(rotation=45)
-    plt.gcf().canvas.manager.set_window_title("Box Plots")
-    save_plot(plt.gcf(), "box_plots.pdf")
+
+# Log-scale (çok önemli)
+    plt.yscale("log")
+
+    plt.gcf().canvas.manager.set_window_title("Box Plots Improved")
+
+# Kaydet
+    save_plot(plt.gcf(), "box_plots_improved.pdf")
+
     plt.show()
 
 def plot_barCharts(df):
     counts = df["INSTITUTION"].value_counts().head(20)
-    plt.figure(figsize=(12,8))
-    counts.plot(kind='bar')
-    plt.title("Top 20 Institutions")
-    plt.ylabel("FREQUENCY")
-    plt.xlabel("INSTITUTION")
-    plt.gcf().canvas.manager.set_window_title("Bar Chart - Top 20 Institutions")
-    save_plot(plt.gcf(), "bar_chart_top20.pdf")
+
+    plt.figure(figsize=(12, 10))
+
+    # Renk paleti: 20 kategori için ideal
+    colors = plt.cm.Blues(np.linspace(0.3, 0.9, len(counts)))
+
+    # Yatay bar chart
+    plt.barh(counts.index, counts.values, color=colors)
+
+    # Değerleri barların üzerine yaz
+    for index, value in enumerate(counts.values):
+        plt.text(value + max(counts.values) * 0.01, index, str(value), va='center')
+
+    plt.xlabel("Frequency")
+
+    # En yüksek barın yukarıda olması için
+    plt.gca().invert_yaxis()
+
+    plt.gcf().canvas.manager.set_window_title("Bar Chart - Top 20 Institutions (Improved)")
+    save_plot(plt.gcf(), "bar_chart_top20_improved.pdf")
+
     plt.show()
 
+
 def plot_scatterPlots(df):
+    df["DATE"] = pd.to_datetime(df["DATE"], dayfirst=True)
+
     plt.figure(figsize=(12,8))
-    plt.scatter(df["FULL_FARE"], df["STUDENT"])
-    plt.title("FULL_FARE vs STUDENT")
+
+    plt.scatter(
+        df["FULL_FARE"],
+        df["STUDENT"],
+        c=df["DATE"].dt.month,
+        cmap="viridis",
+        alpha=0.4,
+        s=20
+    )
+
     plt.xlabel("FULL_FARE")
     plt.ylabel("STUDENT")
-    plt.gcf().canvas.manager.set_window_title("Scatter Plot - FULL_FARE vs STUDENT")
-    save_plot(plt.gcf(), "scatter_fullfare_vs_student.pdf")
+
+    plt.colorbar(label="Month")
+
+    plt.gcf().canvas.manager.set_window_title("Scatter Plot - FULL_FARE vs STUDENT (Improved)")
+    save_plot(plt.gcf(), "scatter_fullfare_vs_student_improved.pdf")
+
     plt.show()
+
 
 def plot_linePlots(df):
     df["DATE"] = pd.to_datetime(df["DATE"], dayfirst=True)
-    eshot = df[df["INSTITUTION"] == "Eshot"]
-    plt.figure(figsize=(12,8))
-    plt.plot(eshot["DATE"], eshot["STUDENT"])
-    plt.title("Eshot - Student Usage Over Time")
-    plt.xlabel("Date")
-    plt.ylabel("STUDENT")
-    plt.gcf().canvas.manager.set_window_title("Line Plot - Eshot Student Usage Over Time")
-    save_plot(plt.gcf(), "line_plot_eshot_student_usage.pdf")
-    plt.show()
 
+    eshot = df[df["INSTITUTION"] == "Eshot"].copy()
+
+    eshot.set_index("DATE", inplace=True)
+
+    monthly_avg = eshot["STUDENT"].resample("M").mean()
+
+    plt.figure(figsize=(12, 6))
+    plt.plot(monthly_avg.index, monthly_avg.values, marker="o")
+    plt.xlabel("Month")
+    plt.ylabel("Average Student Count")
+    plt.grid(True)
+    save_plot(plt.gcf(), "monthly_student_average_count_timeline.pdf")
+
+#plt.show()
 def plot_correlationHeatmap(df):
     numeric_df = df.select_dtypes(include=['int64','float64'])
     corr = numeric_df.corr()
     plt.figure(figsize=(12,8))
     sb.heatmap(corr, annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5)
-    plt.title("Correlation Matrix Heatmap")
     plt.gcf().canvas.manager.set_window_title("Correlation Matrix Heatmap")
     save_plot(plt.gcf(), "correlation_heatmap.pdf")
-    plt.show()
+    #plt.show()
 
 def plot_all_vehicle_user_trends(df):
     """
@@ -116,7 +163,6 @@ def plot_all_vehicle_user_trends(df):
         for col in user_types:
             plt.plot(x_labels, monthly[col], marker='o', label=col, color=colors.get(col, None))
 
-        plt.title(f"{inst} - Monthly Usage by User Types")
         plt.xlabel("Month")
         plt.ylabel("Usage Count")
         plt.xticks(rotation=45)
@@ -126,36 +172,64 @@ def plot_all_vehicle_user_trends(df):
         plt.gcf().canvas.manager.set_window_title(f"{inst} - Monthly Usage by User Types")
         filename = f"{inst.lower().replace(' ', '_')}_monthly_usage_by_user_types.pdf"
         save_plot(plt.gcf(), filename)
-        plt.show()
+        #plt.show()
 
 def plot_PCA_in_2D(pca_df):
-    plt.figure(figsize=(8,6))
-    plt.scatter(pca_df["PC1"],pca_df["PC2"],alpha=0.5)
-    plt.title("PCA - 2D VISUALIZATION")
+    # INSTITUTION'ı sayısal kategoriye dönüştür
+    colors = pca_df["INSTITUTION"].astype("category").cat.codes
+
+    plt.figure(figsize=(10,8))
+    plt.scatter(
+        pca_df["PC1"],
+        pca_df["PC2"],
+        c=colors,
+        cmap="tab20",
+        alpha=0.6,
+        s=30
+    )
+
     plt.xlabel("PC1")
     plt.ylabel("PC2")
-    save_plot(plt.gcf(), "pca_2d_visualization.pdf")
+    plt.colorbar(label="INSTITUTION")
+
+    save_plot(plt.gcf(), "pca_2d_visualization_improved.pdf")
     plt.show()
 
+
 def plot_PCA_in_3D(pca_df,color="blue"):
-    figure=plt.figure(figsize=(9,7))
-    ax=figure.add_subplot(111,projection="3d")
-    ax.scatter(
-        pca_df["PC1"],pca_df["PC2"],pca_df["PC3"],c=color,
-        s=40,alpha=0.6,edgecolors="k"
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection="3d")
+
+    # INSTITUTION renklendirme
+    colors = pca_df["INSTITUTION"].astype("category").cat.codes
+
+    scatter = ax.scatter(
+        pca_df["PC1"],
+        pca_df["PC2"],
+        pca_df["PC3"],
+        c=colors,
+        cmap="tab20",
+        s=40,
+        alpha=0.6
     )
-    ax.set_title("PCA - 3D VISUALIZATION")
+
     ax.set_xlabel("PC1")
     ax.set_ylabel("PC2")
     ax.set_zlabel("PC3")
-    save_plot(plt.gcf(), "pca_3d_visualization.pdf")
+
+    # Colorbar
+    cbar = plt.colorbar(scatter, ax=ax, shrink=0.6, pad=0.1)
+    cbar.set_label("INSTITUTION")
+
+    save_plot(plt.gcf(), "pca_3d_visualization_improved.pdf")
     plt.show()
 
+
 def show_all_plots(df):
+    plot_linePlots(df)
     plot_boxPlots(df)
     plot_barCharts(df)
     plot_scatterPlots(df)
-    plot_linePlots(df)
     plot_correlationHeatmap(df)
     plot_all_vehicle_user_trends(df)
 

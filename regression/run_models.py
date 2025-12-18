@@ -1,6 +1,7 @@
 import pandas as pd
 # Dosya adını değiştirdiğimiz için import da değişti
-from dt_based_regressions import train_model
+from dt_based_regressions import train_model, create_time_series_comparison_plots
+
 
 
 
@@ -35,10 +36,13 @@ def run_test():
             start_date=BASLANGIC_TARIHI
         )
 
+
         print("\n" + "=" * 60)
         print(" ISLEM TAMAMLANDI!")
         print(f" Olusturulan grafikler 'plots' klasorune kaydedildi.")
         print("=" * 60)
+
+        create_time_series_comparison_plots(df, output_dir="plots")
 
     except FileNotFoundError:
         print(f"\n HATA: '{DOSYA_YOLU}' bulunamadi!")

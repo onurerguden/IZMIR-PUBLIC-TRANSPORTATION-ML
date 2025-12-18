@@ -106,7 +106,7 @@ def create_comparison_plot(metrics_df, output_dir):
         )
 
     # Başlık ve Düzen
-    plt.title("Model Karşılaştırması (RMSE & MAPE)", fontsize=14, pad=20)
+
     plt.tight_layout()
     plt.savefig(f"{output_dir}/00_model_comparison.png")
     plt.close()
@@ -161,7 +161,7 @@ def feature_engineering(df, target_col):
     # Artik hesaplamiyoruz, sadece var mi diye bakiyoruz.
     # Eger CSV guncel degilse, once update_csv.py calistirilmalidir.
 
-    special_cols = ['IS_SCHOOL_OPEN', 'IS_EXAM']
+    special_cols = ['IS_SCHOOL_OPEN', 'IS_EXAM', 'IS_EVE']
     for col in special_cols:
         if col not in df.columns:
             print(f"UYARI: '{col}' sutunu bulunamadi! 0 olarak varsayiliyor.")
@@ -217,7 +217,7 @@ def train_model(df, target_col="STUDENT", institution_name="Hepsi", model_type="
                 'BANK CARD']
 
     # Ozel gun sutunlarini korumak icin listeye ekle
-    special_cols = ['IS_SCHOOL_OPEN', 'IS_EXAM', 'IS_HOLIDAY']
+    special_cols = ['IS_SCHOOL_OPEN', 'IS_EXAM', 'IS_EVE', 'IS_HOLIDAY']
     # Bu sutunlar varsa max() alarak koruyacagiz
     agg_dict = {c: 'sum' for c in all_cols if c in df.columns}
     for sc in special_cols:
