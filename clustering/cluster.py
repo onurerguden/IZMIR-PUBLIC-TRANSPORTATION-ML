@@ -372,6 +372,14 @@ class TransportClustering:
         print(f"\n✓ Found {n_clusters} clusters")
         print(f"✓ Noise points: {n_noise} ({n_noise / len(labels) * 100:.1f}%)")
 
+        print("\nIndividual Cluster Sizes (DBSCAN):")
+        unique_labels, counts = np.unique(labels, return_counts=True)
+        for label, count in zip(unique_labels, counts):
+            if label == -1:
+                print(f"  Noise: {count} points")
+            else:
+                print(f"  Cluster {label}: {count} points ({count / len(labels) * 100:.1f}%)")
+
         self._visualize_clusters(X_db_scaled, labels, "dbscan", has_noise=True)
 
         # Explicit anomaly flag
