@@ -141,7 +141,7 @@ rules = rules[
 rules = remove_redundant_rules(rules)
 
 interesting_rules = rules[
-    (rules["lift"] >= 1.5) &
+    (rules["lift"] >= 0.5) &
     (rules["lift"] <= 5)
 ].sort_values(["lift", "confidence"], ascending=False)
 
@@ -225,5 +225,32 @@ def mine_contextual_rules(context_column, context_value, label):
 # RUN DATASET-AWARE CONTEXTUAL ANALYSIS
 # ===============================
 
+
 for context_column, context_value, label in CONTEXT_CASES:
     mine_contextual_rules(context_column, context_value, label)
+
+# ===============================
+# VISUALIZATION (ACADEMIC STYLE)
+# ===============================
+
+import matplotlib.pyplot as plt
+
+# Scatter Plot: Support vs Confidence (Lift as color)
+plt.figure(figsize=(8, 6))
+scatter = plt.scatter(
+    rules["support"],
+    rules["confidence"],
+    c=rules["lift"],
+    cmap="viridis",
+    alpha=0.7
+)
+
+plt.xlabel("Support")
+plt.ylabel("Confidence")
+
+cbar = plt.colorbar(scatter)
+cbar.set_label("Lift")
+
+plt.tight_layout()
+plt.savefig("association_rules_support_confidence.png", dpi=300)
+plt.show()
